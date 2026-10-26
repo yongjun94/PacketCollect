@@ -137,8 +137,8 @@ def main():
     if args.target == 'macos':
         run('/usr/bin/codesign', '--force', '--sign', '-', output)
         run('/usr/bin/codesign', '--verify', '--deep', '--strict', output)
-        run('/usr/bin/lipo', '-verify_arch', 'arm64', output / 'Contents/MacOS/capture_app')
-        run('/usr/bin/lipo', '-verify_arch', 'arm64', proxy / 'http-capture-proxy')
+        run('/usr/bin/lipo', output / 'Contents/MacOS/capture_app', '-verify_arch', 'arm64')
+        run('/usr/bin/lipo', proxy / 'http-capture-proxy', '-verify_arch', 'arm64')
         archive = str(output.parent / 'HTTP-Capture-macOS-arm64.zip')
         run('/usr/bin/ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', output, archive)
     else:

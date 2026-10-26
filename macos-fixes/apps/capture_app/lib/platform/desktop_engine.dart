@@ -22,7 +22,7 @@ class DesktopEngine implements CaptureEngine {
     if (python != null) return [python, '-m', 'capture_proxy.main'];
     return [
       Platform.environment['HTTP_CAPTURE_ENGINE'] ??
-          p.join(
+          p.joinAll([
             p.dirname(Platform.resolvedExecutable),
             if (Platform.isMacOS) '..',
             if (Platform.isMacOS) 'Resources',
@@ -30,7 +30,7 @@ class DesktopEngine implements CaptureEngine {
             Platform.isWindows
                 ? 'http-capture-proxy.exe'
                 : 'http-capture-proxy',
-          ),
+          ]),
     ];
   }
 

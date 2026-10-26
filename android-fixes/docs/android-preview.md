@@ -22,3 +22,6 @@ Extract HTTP-Capture-Source.zip at repository root, overlay fixes then android-f
 
 ## Licensing
 Existing Dart/Flutter dependencies are reused. No third-party native packet engine is bundled. Existing dependency license inventory is not yet an Android APK compliance audit. Validate notices/native licenses and release signing before company deployment.
+
+## Verified 2026-10-26
+Flutter analyze and 6 tests passed. Debug APK built with ARM64/x86_64 libraries. API35 x86_64 emulator acceptance passed: launch, native foreground service, start/stop, actual loopback HTTP proxy round-trip of four binary bytes, session list, persisted body file, HAR generation (one HTTP200 entry) and Android document-picker handoff. No actual document save was performed. SAZ export is wired to the common exporter but Android-specific SAZ import remains unverified. VPN hint, browser-wide capture, real ARM64 devices and TLS decryption were not verified; TLS decryption is unimplemented. Evidence: GitHub Actions Android device smoke run40304087373; APK from Android capture preview run40302489377.

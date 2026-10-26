@@ -16,7 +16,7 @@ class LocalProxyEngine implements CaptureEngine {
   bool _decrypt = false;
   LocalProxyEngine(this.root, {this.bodyLimit = 64 * 1024 * 1024,
     this.tlsIdentity, this.decryptHosts = const {}, this.upstreamContext});
-  final _events = StreamController<Map<String, dynamic>>.broadcast();
+  final _events = StreamController<Map<String, dynamic>>.broadcast(sync:true);
   final _sockets = <Socket>{};
   final _active = <Future<void>>{};
   HttpClient _client = HttpClient()..autoUncompress = false;
@@ -200,7 +200,9 @@ class LocalProxyEngine implements CaptureEngine {
     final server = await HttpServer.bindSecure(InternetAddress.loopbackIPv4, 0, context);
     _tlsServers.add(server);
     Object? tlsError;
+    var receivedHttp = false;
     final listener = server.listen((request) {
+      receivedHttp = true;
       final work = _handle(request, tlsOrigin: authority);
       _active.add(work);
       unawaited(work.whenComplete(() => _active.remove(work)));
@@ -218,7 +220,7 @@ class LocalProxyEngine implements CaptureEngine {
         a.addStream(b).whenComplete(() => a.close()),
         b.addStream(a).whenComplete(() => b.close()),
       ]);
-      if (tlsError != null) throw HandshakeException('Client rejected local CA or TLS handshake failed: $tlsError');
+      if (!receivedHttp || tlsError != null) throw HandshakeException('No decrypted HTTP request or TLS handshake failed; check client CA trust/pinning. ${tlsError ?? ''}');
     } finally {
       if (bridge != null) { _sockets.remove(bridge); bridge.destroy(); }
       if (downstream != null) { _sockets.remove(downstream); downstream.destroy(); }

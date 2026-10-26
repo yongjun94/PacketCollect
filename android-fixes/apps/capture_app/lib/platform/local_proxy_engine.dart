@@ -74,7 +74,8 @@ class LocalProxyEngine implements CaptureEngine {
     try {
       if (request.method == 'CONNECT') {
         if (tlsOrigin != null) throw FormatException('Nested CONNECT is not supported');
-        final authority = Uri.parse('https://${request.uri}');
+        final authority = (request.uri.hasAuthority ? request.uri : Uri.parse('//${request.uri}')).replace(scheme:'https');
+        if(authority.host.isEmpty || authority.userInfo.isNotEmpty) throw FormatException('Invalid CONNECT authority');
         req = HttpMessage(version: 'HTTP/${request.protocolVersion}', headers: _headers(request.headers), method: 'CONNECT', url: authority.toString());
         if (_decrypt && decryptHosts.contains(authority.host.toLowerCase())) {
           await _intercept(request, authority);
@@ -84,6 +85,7 @@ class LocalProxyEngine implements CaptureEngine {
         final upstream = await Socket.connect(authority.host, authority.hasPort ? authority.port : 443, timeout: const Duration(seconds: 15));
         _sockets.add(upstream);
         request.response.statusCode = 200;
+        request.response.contentLength = 0;
         final downstream = await request.response.detachSocket();
         _sockets.add(downstream);
         state = 'tunneled';
@@ -161,6 +163,7 @@ class LocalProxyEngine implements CaptureEngine {
       bridge = await Socket.connect(InternetAddress.loopbackIPv4, server.port);
       _sockets.add(bridge);
       connect.response.statusCode = 200;
+      connect.response.contentLength = 0;
       downstream = await connect.response.detachSocket();
       _sockets.add(downstream);
       final a = bridge, b = downstream;

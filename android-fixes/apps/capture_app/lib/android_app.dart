@@ -2,10 +2,23 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:capture_core/capture_core.dart';
 import 'package:capture_export/capture_export.dart';
 import 'platform/local_proxy_engine.dart';
+
+const bouncyCastleLicense = '''Bouncy Castle bcpkix-jdk18on, bcprov-jdk18on, bcutil-jdk18on 1.86
+https://www.bouncycastle.org/license.html
+
+Copyright (c) 2000 - 2026 The Legion of the Bouncy Castle Inc. (https://www.bouncycastle.org)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+''';
 
 const androidBridge = MethodChannel('dev.httpcapture/android');
 
@@ -102,6 +115,7 @@ class _CaptureState extends State<_Capture> {
   @override
   void initState() {
     super.initState();
+    LicenseRegistry.addLicense(() async* { yield const LicenseEntryWithLineBreaks(['Bouncy Castle 1.86'],bouncyCastleLicense); });
     store = SessionStore(Directory(widget.root))..recoverInterrupted();
     androidBridge.setMethodCallHandler((call) async { if(call.method == 'revoked') await stop(); });
   }
@@ -184,6 +198,7 @@ class _CaptureState extends State<_Capture> {
       const Padding(padding:EdgeInsets.symmetric(horizontal:12),child:Text('HTTP + optional HTTPS decryption for selected hosts. Proxy-aware apps only. Switching apps keeps capture active.')),
       const Padding(padding:EdgeInsets.all(12),child:Text('Temporary VPN proxy only. Wi-Fi proxy settings must stay unchanged. Stop or closing this app releases the VPN; switching apps keeps capture active. Proxy-aware apps only; this replaces any existing VPN.')),
       Wrap(spacing:8,children:[
+        TextButton(onPressed:()=>showLicensePage(context:context),child:const Text('Licenses')),
         TextButton(onPressed:running||busy?null:()=>action(httpsSettings),child:Text(decrypt?'HTTPS on':'HTTPS settings')),
         TextButton(onPressed:running||busy?null:()=>action(selfTestHttps),child:const Text('Test TLS')),
         FilledButton(onPressed:busy?null:()=>action(running?stop:start),child:Text(running?'Stop':'Start')),

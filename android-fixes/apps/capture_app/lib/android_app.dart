@@ -20,16 +20,19 @@ class _Capture extends StatefulWidget {
   @override
   State<_Capture> createState() => _CaptureState();
 }
-class _CaptureState extends State<_Capture> {
+class _CaptureState extends State<_Capture> with WidgetsBindingObserver {
   late final SessionStore store;
   LocalProxyEngine? engine;
   StreamSubscription<Map<String,dynamic>>? subscription;
-  bool busy = false, running = false, paused = false, vpn = false;
+  bool busy = false, running = false, paused = false;
+  Timer? heartbeat;
+  Future<void>? stopping;
   String status = 'Stopped', filter = '';
   CaptureSession? selected;
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     store = SessionStore(Directory(widget.root))..recoverInterrupted();
     androidBridge.setMethodCallHandler((call) async { if(call.method == 'revoked') await stop(); });
   }
@@ -49,14 +52,38 @@ class _CaptureState extends State<_Capture> {
     try {
       await proxy.start(port: 8877);
       engine = proxy;
-      await androidBridge.invokeMethod('start', {'vpn': vpn, 'port': 8877});
-      setState(() { running = true; paused = false; status = vpn ? 'VPN proxy hint active · clients may ignore it' : 'HTTP proxy · 127.0.0.1:8877'; });
-    } catch(_) { await proxy.stop(); await subscription?.cancel(); engine = null; rethrow; }
+      await androidBridge.invokeMethod('start', {'port': 8877});
+      await Future<void>.delayed(const Duration(milliseconds:300));
+      if (!mounted || WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+        await stop(); return;
+      }
+      setState(() { running = true; paused = false; status = 'VPN proxy active · releases automatically on Stop'; });
+      heartbeat?.cancel();
+      heartbeat = Timer.periodic(const Duration(seconds:2), (_) async {
+        try {
+          if(await androidBridge.invokeMethod<bool>('heartbeat') != true) await stop();
+        } catch(e) { heartbeat?.cancel(); try { await stop(); } catch(_) {} if(mounted) setState(() => status = '$e'); }
+      });
+    } catch(_) { try { await androidBridge.invokeMethod('stop'); } finally { await proxy.stop(); await subscription?.cancel(); engine = null; } rethrow; }
   }
-  Future<void> stop() async {
+  Future<void> stop() {
+    if (stopping != null) return stopping!;
+    final work = _stop();
+    stopping = work;
+    return work.whenComplete(() => stopping = null);
+  }
+  Future<void> _stop() async {
+    // Keep the local listener alive until Android confirms its VPN proxy is gone.
     await androidBridge.invokeMethod('stop');
+    heartbeat?.cancel(); heartbeat = null;
     await engine?.stop(); await subscription?.cancel(); engine = null;
-    if(mounted) setState(() { running = false; paused = false; status = 'Stopped'; });
+    if(mounted) setState(() { running = false; paused = false; status = 'Stopped · VPN proxy released'; });
+  }
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (running && (state == AppLifecycleState.paused || state == AppLifecycleState.hidden)) {
+      unawaited(stop().catchError((Object e) { if(mounted) setState(() => status = '$e'); }));
+    }
   }
   Future<void> export(bool saz) async {
     final approved = await showDialog<bool>(context: context, builder: (c) => AlertDialog(title: const Text('Sensitive data'), content: const Text('The archive can contain cookies, tokens and personal data. Save only to an approved local location. Android document providers may include cloud destinations.'), actions: [TextButton(onPressed: () => Navigator.pop(c,false), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(c,true), child: const Text('Continue'))]));
@@ -81,6 +108,8 @@ class _CaptureState extends State<_Capture> {
   }
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    heartbeat?.cancel();
     androidBridge.setMethodCallHandler(null);
     unawaited(engine?.stop() ?? Future.value());
     subscription?.cancel(); store.close(); super.dispose();
@@ -88,10 +117,10 @@ class _CaptureState extends State<_Capture> {
   @override
   Widget build(BuildContext context) {
     final sessions = store.page(limit:200, filter:filter).reversed.toList();
-    return Scaffold(appBar: AppBar(title: const Text('HTTP Capture · Android preview')), body: SafeArea(child: Column(children:[
+    return PopScope(canPop: !running, onPopInvokedWithResult:(didPop,result) async { if(!didPop){await action(() async { await stop(); await SystemNavigator.pop(); });} }, child: Scaffold(appBar: AppBar(title: const Text('HTTP Capture · Safe Preview')), body: SafeArea(child: Column(children:[
       Padding(padding:const EdgeInsets.all(12),child: Text(status)),
       const Padding(padding:EdgeInsets.symmetric(horizontal:12),child:Text('HTTP capture only. HTTPS is forwarded without decryption. No TCP/UDP packet capture. Keep this preview open while capturing.')),
-      SwitchListTile(title:const Text('Experimental VPN proxy hint'), subtitle:const Text('Requires VPN approval. Only proxy-aware apps may use it; no full-device tunnel. Replaces any existing VPN.'), value:vpn,onChanged:running||busy?null:(v)=>setState(()=>vpn=v)),
+      const Padding(padding:EdgeInsets.all(12),child:Text('Temporary VPN proxy only. Wi-Fi proxy settings must stay unchanged. Stop, leaving the app or closing it releases the VPN. Proxy-aware apps only; this replaces any existing VPN.')),
       Wrap(spacing:8,children:[
         FilledButton(onPressed:busy?null:()=>action(running?stop:start),child:Text(running?'Stop':'Start')),
         TextButton(onPressed:!running||busy?null:()=>action(() async { paused=!paused;await engine!.pause(paused);setState((){}); }),child:Text(paused?'Resume':'Pause')),
@@ -100,9 +129,9 @@ class _CaptureState extends State<_Capture> {
         TextButton(onPressed:running||busy?null:()=>action(()=>export(false)),child:const Text('HAR')),
         TextButton(onPressed:running||busy?null:() async { final yes=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(content:const Text('Delete all stored sessions and bodies?'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Cancel')),TextButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Delete'))]));if(yes==true){store.clear();setState(()=>selected=null);} },child:const Text('Clear')),
       ]),
-      const Padding(padding:EdgeInsets.all(12),child:Text('Manual mode: configure this device’s Wi-Fi HTTP proxy as 127.0.0.1:8877. Restore the previous Wi-Fi proxy BEFORE Stop. VPN mode does not change Wi-Fi settings.')),
+      TextButton(onPressed:busy?null:()=>androidBridge.invokeMethod('wifiSettings'),child:const Text('Wi-Fi settings · remove old manual proxy once')),
       TextField(decoration:InputDecoration(labelText:'Filter · ${store.count(filter)} sessions (latest 200 shown)'),onChanged:(v)=>setState(()=>filter=v)),
       Expanded(child:ListView.builder(itemCount:sessions.length,itemBuilder:(c,i){final s=sessions[i];return ListTile(title:Text('${s.request.method} ${s.response?.status ?? s.captureStatus}'),subtitle:Text(s.request.url??''),onTap:()=>showDialog<void>(context:context,builder:(c)=>AlertDialog(title:const Text('Session'),content:SingleChildScrollView(child:SelectableText('${s.request.url}\n${s.captureStatus}\n${s.error??''}\n\nRequest\n${s.request.headers.map((h)=>'${h.name}: ${h.value}').join('\n')}\n\nResponse\n${s.response?.headers.map((h)=>'${h.name}: ${h.value}').join('\n')??''}\nBody: ${s.response?.body?.size??0} bytes')),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Close'))]))); })),
-    ])));
+    ]))));
   }
 }

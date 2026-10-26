@@ -36,7 +36,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           p=Path('http-capture/apps/capture_app/android/app/build.gradle.kts')
-          s=p.read_text().replace('minSdk = flutter.minSdkVersion','minSdk = 29')
+          s=p.read_text().replace('minSdk = flutter.minSdkVersion','minSdk = 29').replace('applicationId = "dev.httpcapture.capture_app"','applicationId = "dev.httpcapture.capture_app.safe"')
           p.write_text(s)
           PY
       - name: Analyze and run HTTP proxy integration tests
@@ -87,4 +87,5 @@ jobs:
             android-device-smoke.json
             android-logcat.txt
             emulator.log
+            capture-ui.xml
           if-no-files-found: ignore

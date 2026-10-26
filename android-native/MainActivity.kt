@@ -3,7 +3,10 @@ package dev.httpcapture.capture_app
 import android.app.Activity
 import android.content.Intent
 import android.net.VpnService
-import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.net.ConnectivityManager
+import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -14,22 +17,49 @@ class MainActivity : FlutterActivity() {
     private var pending: MethodChannel.Result? = null
     private var exportPath: String? = null
     private var port = 8877
+    private val handler = Handler(Looper.getMainLooper())
+    private var starting: MethodChannel.Result? = null
+    private fun networkState(): Map<String, Any> {
+        val proxy = getSystemService(ConnectivityManager::class.java).defaultProxy
+        val own = proxy != null && proxy.host in listOf("127.0.0.1", "localhost", "::1") && proxy.port == port
+        val state = mapOf("active" to CaptureService.active(), "ownProxy" to own,
+            "proxyHost" to (proxy?.host ?: ""), "proxyPort" to (proxy?.port ?: 0))
+        if ((applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0) File(filesDir,"recovery-state.json").writeText(org.json.JSONObject(state).toString())
+        return state
+    }
+    private fun stopAndReport(result: MethodChannel.Result, attempts: Int = 25) {
+        CaptureService.shutdown()
+        stopService(Intent(this, CaptureService::class.java))
+        val state = networkState()
+        if (state["ownProxy"] == true && attempts > 0) {
+            handler.postDelayed({ stopAndReport(result,attempts-1) },200)
+        } else if(state["ownProxy"] == true) {
+            result.error("manual_proxy", "A manual Wi-Fi proxy remains. Restore it in Wi-Fi settings; Android does not permit this app to edit it.", null)
+        } else result.success(state)
+    }
     override fun configureFlutterEngine(engine: FlutterEngine) {
         super.configureFlutterEngine(engine)
         channel = MethodChannel(engine.dartExecutor.binaryMessenger, "dev.httpcapture/android")
         CaptureService.revoked = { runOnUiThread { channel.invokeMethod("revoked", null) } }
+        networkState()
         channel.setMethodCallHandler { call, result ->
             try {
                 when (call.method) {
                     "start" -> {
-                        if (pending != null) { result.error("busy", "Another system dialog is pending", null); return@setMethodCallHandler }
+                        if (pending != null || starting != null) { result.error("busy", "Another system dialog is pending", null); return@setMethodCallHandler }
                         port = call.argument<Int>("port") ?: 8877
-                        val vpn = call.argument<Boolean>("vpn") == true
-                        val intent = if (vpn) VpnService.prepare(this) else null
+                        if (networkState()["ownProxy"] == true && !CaptureService.active()) {
+                            result.error("manual_proxy", "Remove the old manual Wi-Fi proxy before starting. This build uses a temporary VPN proxy only.", null)
+                            return@setMethodCallHandler
+                        }
+                        val intent = VpnService.prepare(this)
                         if (intent != null) { pending = result; startActivityForResult(intent, 701) }
-                        else { launchService(vpn); result.success(null) }
+                        else launchService(result)
                     }
-                    "stop" -> { stopService(Intent(this, CaptureService::class.java)); result.success(null) }
+                    "stop" -> stopAndReport(result)
+                    "heartbeat" -> { networkState(); result.success(CaptureService.heartbeat()) }
+                    "networkState" -> result.success(networkState())
+                    "wifiSettings" -> { startActivity(Intent(Settings.ACTION_WIFI_SETTINGS)); result.success(null) }
                     "export" -> {
                         if (pending != null) { result.error("busy", "Another system dialog is pending", null); return@setMethodCallHandler }
                         val file = File(call.argument<String>("path")!!).canonicalFile
@@ -47,8 +77,20 @@ class MainActivity : FlutterActivity() {
             } catch (e: Exception) { result.error("android", e.message, null) }
         }
     }
-    private fun launchService(vpn: Boolean) {
-        startForegroundService(Intent(this, CaptureService::class.java).putExtra("vpn", vpn).putExtra("port", port))
+    private fun launchService(result: MethodChannel.Result) {
+        starting = result
+        CaptureService.started = { error ->
+            val reply = starting; starting = null
+            if (error == null) reply?.success(networkState()) else reply?.error("vpn", error, null)
+        }
+        try { startForegroundService(Intent(this, CaptureService::class.java).putExtra("port",port)) }
+        catch(e: Exception) { starting = null; CaptureService.started = null; result.error("vpn", e.message,null) }
+        handler.postDelayed({
+            if (starting === result) {
+                starting = null; CaptureService.started = null; CaptureService.shutdown()
+                result.error("vpn", "VPN startup timed out",null)
+            }
+        },15000)
     }
     @Deprecated("Activity result bridge")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -56,7 +98,7 @@ class MainActivity : FlutterActivity() {
         if (requestCode == 701) {
             val result = pending; pending = null
             if (resultCode == Activity.RESULT_OK) {
-                try { launchService(true); result?.success(null) }
+                try { if(result != null) launchService(result) }
                 catch (e: Exception) { result?.error("vpn",e.message,null) }
             } else result?.error("vpn", "VPN permission denied", null)
         }
@@ -74,7 +116,16 @@ class MainActivity : FlutterActivity() {
             }.start()
         }
     }
+    override fun onStop() {
+        // This preview has no headless Flutter engine. Never retain a proxy after UI leaves.
+        CaptureService.shutdown(true)
+        super.onStop()
+    }
     override fun onDestroy() {
+        CaptureService.shutdown()
+        CaptureService.started = null
+        starting?.error("activity", "Activity destroyed",null); starting = null
+        handler.removeCallbacksAndMessages(null)
         CaptureService.revoked = null
         stopService(Intent(this, CaptureService::class.java))
         pending?.error("activity", "Activity destroyed", null); pending = null

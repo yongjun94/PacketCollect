@@ -1,27 +1,11 @@
-# Android preview scope
+# Android Safe Preview: temporary VPN proxy
 
-Android 10/API29 or newer. Debug-key signed test APK, not production-signed or submitted to Play. Windows implementation is unchanged.
+This version removes manual Wi-Fi proxy mode. Standard Android apps cannot restore arbitrary user-managed Wi-Fi proxy settings. Leave Wi-Fi proxy at its original setting; the app creates a temporary VPN-scoped proxy instead. A stale loopback manual proxy is detected before capture starts and requires one-time removal in Android settings.
 
-## Implemented
-- Device-local Dart HTTP proxy bound to IPv4 loopback:8877, no Python dependency and no remote listener.
-- HTTP request/response streaming, duplicate parsed headers, binary body files, common SQLite session model, capture pause/start/stop, basic filter (last 200 matching sessions displayed).
-- Each captured body is capped at 64 MiB; truncation is explicit and forwarding continues. Header casing/order is normalized by Dart, upstream HTTP version is not available and is explicitly labeled as normalized. No raw packet fidelity claim.
-- SAZ/HAR reuse existing exporters. Android Storage Access Framework creates a user-selected document; providers can include cloud accounts, so choose local storage. App itself does not upload captured traffic.
-- Native foreground service; optional user-approved VpnService advertises a local HTTP proxy. This is a recommendation for proxy-aware clients, NOT a packet tunnel. No routes or packet processing engine are installed. VPN/proxy behavior on devices remains unverified. Other VPNs cannot be used concurrently.
-- HTTPS CONNECT tunnels forward encrypted bytes without recording decrypted traffic; tunnel session metadata appears when the connection closes. No CA generation, certificate installation, TLS decryption or pinning bypass.
+Stop closes the VPN before the local proxy listener. Background/Home, Back exit, Activity destruction, task removal, system VPN revocation, a missing Flutter heartbeat (10 seconds), and process termination release the VPN. No persistent Wi-Fi settings are written. Always-on VPN is disabled for this preview; do not enable VPN lockdown. Proxy-aware clients only, no full packet tunnel or HTTPS decryption.
 
-## Device test
-1. Keep app open, Start with VPN hint OFF, tap Test HTTP. This makes a genuine request through the proxy to a local HTTP origin and checks four binary bytes. Inspect the resulting session.
-2. For browser traffic, record the current Wi-Fi proxy values. Configure this same Android device's Wi-Fi proxy to 127.0.0.1:8877 and browse an HTTP URL. Some clients ignore system proxy. Restore original settings BEFORE Stop or app exit; manual settings cannot be automatically restored by this app.
-3. Alternatively test the optional VPN hint after explicit Android approval. The proxy is only a hint; HTTP traffic may not appear. Do not enable lockdown/always-on VPN for this preview. HTTPS bodies are not captured.
-4. Stop, export SAZ/HAR to LOCAL device storage, transfer to Windows and verify Fiddler/DevTools. Android-produced exports and real-device operation require acceptance testing.
-5. Capture is foreground-preview scope. Stop before leaving the app; service is not a durable headless Flutter engine. Process death may lose session metadata. Android UI body preview, full pagination, background capture, native TCP/IP engine, TLS MITM and release signing remain unimplemented.
+The safe preview has applicationId dev.httpcapture.capture_app.safe, separate from the first preview, to preserve existing captured data and avoid replacing a debug-signed APK with a different ephemeral CI signing key. It can be installed alongside the old preview. Do not run both captures simultaneously.
 
-## Build
-Extract HTTP-Capture-Source.zip at repository root, overlay fixes then android-fixes. Generate Android runner with Flutter3.35.5: flutter create --platforms android --org dev.httpcapture --project-name capture_app --no-pub . (inside apps/capture_app); copy android-native files as in workflow. Set minSdk29. Java17 and Android SDK required. flutter analyze; flutter test; flutter build apk --debug.
+Lifecycle recovery tests are included in android-scripts/android_device_smoke.py. They assert Android's actual ConnectivityManager.defaultProxy points at the local VPN proxy during capture and no longer does after Stop/Home/force-stop plus restart. Real device behavior must still be checked.
 
-## Licensing
-Existing Dart/Flutter dependencies are reused. No third-party native packet engine is bundled. Existing dependency license inventory is not yet an Android APK compliance audit. Validate notices/native licenses and release signing before company deployment.
-
-## Verified 2026-10-26
-Flutter analyze and 6 tests passed. Debug APK built with ARM64/x86_64 libraries. API35 x86_64 emulator acceptance passed: launch, native foreground service, start/stop, actual loopback HTTP proxy round-trip of four binary bytes, session list, persisted body file, HAR generation (one HTTP200 entry) and Android document-picker handoff. No actual document save was performed. SAZ export is wired to the common exporter but Android-specific SAZ import remains unverified. VPN hint, browser-wide capture, real ARM64 devices and TLS decryption were not verified; TLS decryption is unimplemented. Evidence: GitHub Actions Android device smoke run40304087373; APK from Android capture preview run40302489377.
+Android10+; debug signed; no production license/security audit. Session model and exporters unchanged. Capture is foreground-only. HTTP headers are parsed/normalized; body files capped at64MiB each with explicit partial status. Export via user-selected Android document provider; choose local storage to avoid cloud providers. SAZ/HAR importer compatibility for this variant needs acceptance testing.

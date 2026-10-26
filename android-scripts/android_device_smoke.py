@@ -32,34 +32,58 @@ def wait_text(label, tap=False, timeout=120):
                     adb('shell','input','tap',str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
                 return value
         time.sleep(1)
-    raise RuntimeError('UI text missing: '+label)
+    raise RuntimeError('UI text missing: '+label+' '+ET.tostring(tree,encoding='unicode') if 'tree' in locals() else 'UI unavailable')
 
 
 adb('install','-r','http-capture/apps/capture_app/build/app/outputs/flutter-apk/app-debug.apk')
-adb('shell','am','start','-n','dev.httpcapture.capture_app/.MainActivity')
+adb('shell','am','start','-n','dev.httpcapture.capture_app.safe/dev.httpcapture.capture_app.MainActivity')
 time.sleep(15)
 wait_text('Stopped')
 wait_text('Start',tap=True)
-wait_text('HTTP proxy ·')
+wait_text('OK',tap=True)  # Android VPN consent, not silently accepted by app.
+wait_text('VPN proxy active')
+time.sleep(3)
+state=json.loads(adb('shell','run-as','dev.httpcapture.capture_app.safe','cat','files/recovery-state.json'))
+assert state['active'] is True, state
+assert state['ownProxy'] is True, state
 wait_text('Test HTTP',tap=True)
 wait_text('Local proxy round trip passed')
 wait_text('GET 200')
 wait_text('Stop',tap=True)
 wait_text('Stopped')
+state=json.loads(adb('shell','run-as','dev.httpcapture.capture_app.safe','cat','files/recovery-state.json'))
+assert state['active'] is False and state['ownProxy'] is False, state
+# Home/background release, followed by process termination and restart.
+wait_text('Start',tap=True)
+wait_text('VPN proxy active')
+adb('shell','input','keyevent','3')
+time.sleep(3)
+adb('shell','am','start','-n','dev.httpcapture.capture_app.safe/dev.httpcapture.capture_app.MainActivity')
+wait_text('Stopped')
+state=json.loads(adb('shell','run-as','dev.httpcapture.capture_app.safe','cat','files/recovery-state.json'))
+assert state['active'] is False and state['ownProxy'] is False, state
+wait_text('Start',tap=True)
+wait_text('VPN proxy active')
+adb('shell','am','force-stop','dev.httpcapture.capture_app.safe')
+time.sleep(2)
+adb('shell','am','start','-n','dev.httpcapture.capture_app.safe/dev.httpcapture.capture_app.MainActivity')
+wait_text('Stopped')
+state=json.loads(adb('shell','run-as','dev.httpcapture.capture_app.safe','cat','files/recovery-state.json'))
+assert state['active'] is False and state['ownProxy'] is False, state
 # Test actual exporter handoff to Android's document picker without saving to cloud.
 wait_text('HAR',tap=True)
 wait_text('Sensitive data')
 wait_text('Continue',tap=True)
 wait_text('capture.har')
-har_path=adb('shell','run-as','dev.httpcapture.capture_app','find','.','-name','capture.har').strip().splitlines()[0]
-har=json.loads(adb('shell','run-as','dev.httpcapture.capture_app','cat',har_path))
+har_path=adb('shell','run-as','dev.httpcapture.capture_app.safe','find','.','-name','capture.har').strip().splitlines()[0]
+har=json.loads(adb('shell','run-as','dev.httpcapture.capture_app.safe','cat',har_path))
 assert len(har['log']['entries']) == 1
 assert har['log']['entries'][0]['response']['status'] == 200
 # Common SQLite metadata and binary body survived on Android's own filesystem.
-rows=adb('shell','run-as','dev.httpcapture.capture_app','ls','files')
+rows=adb('shell','run-as','dev.httpcapture.capture_app.safe','ls','files')
 # The exact support directory can be nested; inspect files without reading traffic values.
-listing=adb('shell','run-as','dev.httpcapture.capture_app','find','.','-name','*.response.bin')
+listing=adb('shell','run-as','dev.httpcapture.capture_app.safe','find','.','-name','*.response.bin')
 if not listing.strip(): raise RuntimeError('No captured body file persisted')
-report={'status':'passed','device':'Android API35 x86_64 emulator','apkLaunch':True,'nativeForegroundService':True,'localHttpBinaryRoundTrip':True,'sessionList':True,'harDocumentPicker':True,'bodyFilePersisted':True,'vpnHint':'not tested','realDevice':'not tested','httpsDecryption':False}
+report={'status':'passed','device':'Android API35 x86_64 emulator','apkLaunch':True,'nativeForegroundService':True,'localHttpBinaryRoundTrip':True,'sessionList':True,'harDocumentPicker':True,'bodyFilePersisted':True,'vpnProxyInstalled':True,'stopRestoresDefaultProxy':True,'homeReleasesProxy':True,'forceStopReleasesProxy':True,'realDevice':'not tested','httpsDecryption':False}
 Path('android-device-smoke.json').write_text(json.dumps(report,indent=2))
 print(json.dumps(report))

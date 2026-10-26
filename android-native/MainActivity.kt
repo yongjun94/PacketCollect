@@ -34,7 +34,7 @@ class MainActivity : FlutterActivity() {
                         if (pending != null) { result.error("busy", "Another system dialog is pending", null); return@setMethodCallHandler }
                         val file = File(call.argument<String>("path")!!).canonicalFile
                         // Only files from this app's private data can be exported.
-                        if (!file.path.startsWith(applicationInfo.dataDir + "/")) throw SecurityException("Export outside app storage")
+                        if (!file.path.startsWith(File(applicationInfo.dataDir).canonicalPath + "/")) throw SecurityException("Export outside app storage")
                         exportPath = file.path; pending = result
                         startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                             addCategory(Intent.CATEGORY_OPENABLE)

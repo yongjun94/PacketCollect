@@ -49,9 +49,35 @@ jobs:
       - name: Build installable debug APK
         working-directory: http-capture/apps/capture_app
         run: flutter build apk --debug
+      - name: Start API35 emulator and exercise real Android proxy flow
+        timeout-minutes: 15
+        run: |
+          sudo chmod 666 /dev/kvm
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "system-images;android-35;google_apis;x86_64" "emulator"
+          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --force --name capture-test --package "system-images;android-35;google_apis;x86_64"
+          "$ANDROID_HOME/emulator/emulator" -avd capture-test -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot > emulator.log 2>&1 &
+          adb wait-for-device
+          for i in $(seq 1 120); do
+            if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; then break; fi
+            sleep 2
+          done
+          adb shell input keyevent 82
+          python3 android-scripts/android_device_smoke.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: HTTP-Capture-Android-preview
           path: http-capture/apps/capture_app/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+      - name: Device diagnostics
+        if: always()
+        run: adb logcat -d > android-logcat.txt || true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: Android-test-diagnostics
+          path: |
+            android-device-smoke.json
+            android-logcat.txt
+            emulator.log
+          if-no-files-found: ignore

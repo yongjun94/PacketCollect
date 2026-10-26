@@ -1,0 +1,57 @@
+name: Android capture preview
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['android-fixes/**', 'android-native/**', '.github/workflows/android-build.yml']
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      FLUTTER_SUPPRESS_ANALYTICS: 'true'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: '3.35.5'
+          channel: stable
+          cache: true
+      - name: Prepare complete project and Android runner
+        run: |
+          unzip -q HTTP-Capture-Source.zip
+          cp -R fixes/. http-capture/
+          cd http-capture/apps/capture_app
+          flutter create --platforms android --org dev.httpcapture --project-name capture_app --no-pub .
+          cd ../../..
+          cp -R android-fixes/. http-capture/
+          cp android-native/AndroidManifest.xml http-capture/apps/capture_app/android/app/src/main/AndroidManifest.xml
+          cp android-native/*.kt http-capture/apps/capture_app/android/app/src/main/kotlin/dev/httpcapture/capture_app/
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('http-capture/apps/capture_app/android/app/build.gradle.kts')
+          s=p.read_text().replace('minSdk = flutter.minSdkVersion','minSdk = 29')
+          p.write_text(s)
+          PY
+      - name: Analyze and run HTTP proxy integration tests
+        working-directory: http-capture/apps/capture_app
+        run: |
+          flutter pub get --enforce-lockfile
+          dart format lib/android_app.dart lib/platform/local_proxy_engine.dart test/local_proxy_test.dart
+          flutter analyze
+          flutter test --reporter expanded
+      - name: Build installable debug APK
+        working-directory: http-capture/apps/capture_app
+        run: flutter build apk --debug
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: HTTP-Capture-Android-preview
+          path: http-capture/apps/capture_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14

@@ -27,6 +27,8 @@ def wait_text(label, tap=False, timeout=120):
         for node in tree.iter('node'):
             value=node.attrib.get('text','')+' '+node.attrib.get('content-desc','')
             if label in value:
+                if tap and (node.attrib.get('clickable') != 'true' or node.attrib.get('enabled') != 'true'):
+                    continue
                 if tap:
                     coords=list(map(int,re.findall(r'\d+',node.attrib['bounds'])))
                     adb('shell','input','tap',str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
@@ -53,10 +55,16 @@ wait_text('Stop',tap=True)
 wait_text('Stopped')
 state=json.loads(adb('shell','run-as','dev.httpcapture.capture_app.safe','cat','files/recovery-state.json'))
 assert state['active'] is False and state['ownProxy'] is False, state
-# Home/background release, followed by process termination and restart.
+# Switching apps must keep capture alive; explicit Back exit releases it.
 wait_text('Start',tap=True)
 wait_text('VPN proxy active')
 adb('shell','input','keyevent','3')
+time.sleep(12)
+state=json.loads(adb('shell','run-as','dev.httpcapture.capture_app.safe','cat','files/recovery-state.json'))
+assert state['active'] is True and state['ownProxy'] is True, state
+adb('shell','am','start','-n','dev.httpcapture.capture_app.safe/dev.httpcapture.capture_app.MainActivity')
+wait_text('VPN proxy active')
+adb('shell','input','keyevent','4')
 time.sleep(3)
 adb('shell','am','start','-n','dev.httpcapture.capture_app.safe/dev.httpcapture.capture_app.MainActivity')
 wait_text('Stopped')
@@ -77,13 +85,14 @@ wait_text('Continue',tap=True)
 wait_text('capture.har')
 har_path=adb('shell','run-as','dev.httpcapture.capture_app.safe','find','.','-name','capture.har').strip().splitlines()[0]
 har=json.loads(adb('shell','run-as','dev.httpcapture.capture_app.safe','cat',har_path))
-assert len(har['log']['entries']) == 1
-assert har['log']['entries'][0]['response']['status'] == 200
+test_entries=[e for e in har['log']['entries'] if e['request']['url'].endswith('/capture-self-test')]
+assert len(test_entries) == 1
+assert test_entries[0]['response']['status'] == 200
 # Common SQLite metadata and binary body survived on Android's own filesystem.
 rows=adb('shell','run-as','dev.httpcapture.capture_app.safe','ls','files')
 # The exact support directory can be nested; inspect files without reading traffic values.
 listing=adb('shell','run-as','dev.httpcapture.capture_app.safe','find','.','-name','*.response.bin')
 if not listing.strip(): raise RuntimeError('No captured body file persisted')
-report={'status':'passed','device':'Android API35 x86_64 emulator','apkLaunch':True,'nativeForegroundService':True,'localHttpBinaryRoundTrip':True,'sessionList':True,'harDocumentPicker':True,'bodyFilePersisted':True,'vpnProxyInstalled':True,'stopRestoresDefaultProxy':True,'homeReleasesProxy':True,'forceStopReleasesProxy':True,'realDevice':'not tested','httpsDecryption':False}
+report={'status':'passed','device':'Android API35 x86_64 emulator','apkLaunch':True,'nativeForegroundService':True,'localHttpBinaryRoundTrip':True,'sessionList':True,'harDocumentPicker':True,'bodyFilePersisted':True,'vpnProxyInstalled':True,'stopRestoresDefaultProxy':True,'backgroundKeepsCapture':True,'backExitReleasesProxy':True,'forceStopReleasesProxy':True,'realDevice':'not tested','httpsDecryption':False}
 Path('android-device-smoke.json').write_text(json.dumps(report,indent=2))
 print(json.dumps(report))

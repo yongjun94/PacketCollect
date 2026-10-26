@@ -116,11 +116,6 @@ class MainActivity : FlutterActivity() {
             }.start()
         }
     }
-    override fun onStop() {
-        // This preview has no headless Flutter engine. Never retain a proxy after UI leaves.
-        CaptureService.shutdown(true)
-        super.onStop()
-    }
     override fun onDestroy() {
         CaptureService.shutdown()
         CaptureService.started = null

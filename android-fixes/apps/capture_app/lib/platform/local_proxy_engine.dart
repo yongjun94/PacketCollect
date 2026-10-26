@@ -8,7 +8,13 @@ import 'package:capture_core/capture_core.dart';
 class LocalProxyEngine implements CaptureEngine {
   final Directory root;
   final int bodyLimit;
-  LocalProxyEngine(this.root, {this.bodyLimit = 64 * 1024 * 1024});
+  final Future<SecurityContext> Function(String host)? tlsIdentity;
+  final Set<String> decryptHosts;
+  final SecurityContext? upstreamContext;
+  final _tlsServers = <HttpServer>{};
+  bool _decrypt = false;
+  LocalProxyEngine(this.root, {this.bodyLimit = 64 * 1024 * 1024,
+    this.tlsIdentity, this.decryptHosts = const {}, this.upstreamContext});
   final _events = StreamController<Map<String, dynamic>>.broadcast();
   final _sockets = <Socket>{};
   final _active = <Future<void>>{};
@@ -21,10 +27,11 @@ class LocalProxyEngine implements CaptureEngine {
   Stream<Map<String, dynamic>> get events => _events.stream;
   @override
   Future<void> start({int port = 8877, bool decrypt = false}) async {
-    if (decrypt) throw UnsupportedError('Android HTTPS decryption is not implemented');
+    if (decrypt && (tlsIdentity == null || decryptHosts.isEmpty)) throw StateError('Choose HTTPS hosts and configure a local CA first');
+    _decrypt = decrypt;
     if (_server != null) throw StateError('Proxy already running');
     await Directory('${root.path}/bodies').create(recursive: true);
-    _client = HttpClient()..autoUncompress = false;
+    _client = HttpClient(context: upstreamContext)..autoUncompress = false;
     _run = _id();
     _paused = false;
     _server = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
@@ -55,7 +62,7 @@ class LocalProxyEngine implements CaptureEngine {
       }
     });
   }
-  Future<void> _handle(HttpRequest request) async {
+  Future<void> _handle(HttpRequest request, {Uri? tlsOrigin}) async {
     final record = !_paused;
     final id = _id();
     final start = DateTime.now().toUtc();
@@ -66,8 +73,14 @@ class LocalProxyEngine implements CaptureEngine {
     String? error;
     try {
       if (request.method == 'CONNECT') {
+        if (tlsOrigin != null) throw FormatException('Nested CONNECT is not supported');
         final authority = Uri.parse('https://${request.uri}');
         req = HttpMessage(version: 'HTTP/${request.protocolVersion}', headers: _headers(request.headers), method: 'CONNECT', url: authority.toString());
+        if (_decrypt && decryptHosts.contains(authority.host.toLowerCase())) {
+          await _intercept(request, authority);
+          req = null; // Inner HTTP requests have their own complete/error sessions.
+          return;
+        }
         final upstream = await Socket.connect(authority.host, authority.hasPort ? authority.port : 443, timeout: const Duration(seconds: 15));
         _sockets.add(upstream);
         request.response.statusCode = 200;
@@ -86,8 +99,9 @@ class LocalProxyEngine implements CaptureEngine {
           upstream.destroy(); downstream.destroy();
         }
       } else {
-        final uri = request.uri;
-        if (uri.scheme != 'http' || uri.host.isEmpty) throw FormatException('An absolute http:// proxy URL is required');
+        final uri = tlsOrigin == null ? request.uri : tlsOrigin.replace(path: request.uri.path, query: request.uri.hasQuery ? request.uri.query : null);
+        if (tlsOrigin != null && request.uri.hasAuthority && (request.uri.host != tlsOrigin.host || request.uri.port != tlsOrigin.port)) throw FormatException('TLS request authority differs from CONNECT');
+        if (!['http', 'https'].contains(uri.scheme) || uri.host.isEmpty) throw FormatException('An absolute http:// proxy URL is required');
         if (['127.0.0.1', 'localhost', '::1'].contains(uri.host) && uri.port == port) {
           throw StateError('Proxy loop refused');
         }
@@ -100,6 +114,7 @@ class LocalProxyEngine implements CaptureEngine {
         await requestBody.close();
         final incoming = await outbound.close().timeout(const Duration(seconds: 60));
         res = HttpMessage(version: 'HTTP/1.1', headers: _headers(incoming.headers), status: incoming.statusCode, reason: incoming.reasonPhrase);
+        request.response.persistentConnection = false;
         request.response.statusCode = incoming.statusCode;
         request.response.reasonPhrase = incoming.reasonPhrase;
         _copy(incoming.headers, request.response.headers);
@@ -123,10 +138,41 @@ class LocalProxyEngine implements CaptureEngine {
             request: HttpMessage(version: r.version, headers: r.headers, method: r.method, url: r.url, body: request.method == 'CONNECT' ? null : requestBody.ref(state == 'complete')),
             response: s == null ? null : HttpMessage(version: s.version, headers: s.headers, status: s.status, reason: s.reason, body: responseBody.ref(state == 'complete')),
             captureStatus: state, error: error,
-            connection: {'engine': 'dart-explicit-proxy', 'headerRepresentation': 'parsed; original order/casing unavailable', 'responseVersion': 'HTTP/1.1 normalized; upstream version unavailable'});
+            connection: {'engine': 'dart-explicit-proxy', 'headerRepresentation': 'parsed; original order/casing unavailable', 'responseVersion': 'HTTP/1.1 normalized; upstream version unavailable', 'tlsDecrypted': tlsOrigin != null});
           _events.add({'type': 'session', 'session': session.toJson()});
         }
       } catch (e) { _events.add({'type': 'fatal', 'error': 'Session persistence failed: $e'}); }
+    }
+  }
+  Future<void> _intercept(HttpRequest connect, Uri authority) async {
+    if (_tlsServers.length >= 64) throw StateError('TLS connection limit reached');
+    final context = await tlsIdentity!(authority.host);
+    if (_server == null) throw StateError('Capture stopped');
+    final server = await HttpServer.bindSecure(InternetAddress.loopbackIPv4, 0, context);
+    _tlsServers.add(server);
+    Object? tlsError;
+    final listener = server.listen((request) {
+      final work = _handle(request, tlsOrigin: authority);
+      _active.add(work);
+      unawaited(work.whenComplete(() => _active.remove(work)));
+    }, onError: (Object e) { tlsError = e; });
+    Socket? bridge, downstream;
+    try {
+      bridge = await Socket.connect(InternetAddress.loopbackIPv4, server.port);
+      _sockets.add(bridge);
+      connect.response.statusCode = 200;
+      downstream = await connect.response.detachSocket();
+      _sockets.add(downstream);
+      final a = bridge, b = downstream;
+      await Future.wait([
+        a.addStream(b).whenComplete(() => a.close()),
+        b.addStream(a).whenComplete(() => b.close()),
+      ]);
+      if (tlsError != null) throw HandshakeException('Client rejected local CA or TLS handshake failed: $tlsError');
+    } finally {
+      if (bridge != null) { _sockets.remove(bridge); bridge.destroy(); }
+      if (downstream != null) { _sockets.remove(downstream); downstream.destroy(); }
+      await server.close(force: true); await listener.cancel(); _tlsServers.remove(server);
     }
   }
   @override
@@ -135,7 +181,9 @@ class LocalProxyEngine implements CaptureEngine {
   Future<void> stop() async {
     final server = _server;
     if (server == null) return;
+    _server = null;
     await server.close(force: true);
+    for (final tls in _tlsServers.toList()) { await tls.close(force: true); }
     for (final socket in _sockets.toList()) { socket.destroy(); }
     _client.close(force: true);
     await Future.wait(_active.toList()).timeout(const Duration(seconds: 10));

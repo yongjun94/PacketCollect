@@ -17,6 +17,7 @@ class MainActivity : FlutterActivity() {
     private var pending: MethodChannel.Result? = null
     private var exportPath: String? = null
     private var port = 8877
+    private val certificateAuthority by lazy { CertificateAuthority(this) }
     private val handler = Handler(Looper.getMainLooper())
     private var starting: MethodChannel.Result? = null
     private fun networkState(): Map<String, Any> {
@@ -59,6 +60,17 @@ class MainActivity : FlutterActivity() {
                     "stop" -> stopAndReport(result)
                     "heartbeat" -> { networkState(); result.success(CaptureService.heartbeat()) }
                     "networkState" -> result.success(networkState())
+                    "caInfo", "tlsIdentity" -> {
+                        val host = call.argument<String>("host")
+                        Thread {
+                            try {
+                                val ca = certificateAuthority
+                                val value = if(call.method == "caInfo") ca.info() else ca.leaf(requireNotNull(host))
+                                runOnUiThread { result.success(value) }
+                            } catch(e: Exception) { runOnUiThread { result.error("certificate",e.message,null) } }
+                        }.start()
+                    }
+                    "securitySettings" -> { startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS)); result.success(null) }
                     "wifiSettings" -> { startActivity(Intent(Settings.ACTION_WIFI_SETTINGS)); result.success(null) }
                     "export" -> {
                         if (pending != null) { result.error("busy", "Another system dialog is pending", null); return@setMethodCallHandler }

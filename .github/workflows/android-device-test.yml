@@ -1,0 +1,60 @@
+name: Android device smoke
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/android-device-test.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  device:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare API35 emulator at an explicit AVD path
+        run: |
+          sudo rm -rf /usr/share/dotnet "$ANDROID_HOME/ndk"
+          sudo chmod 666 /dev/kvm
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "system-images;android-35;google_apis;x86_64" "emulator" "platform-tools"
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/capture-avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo "ANDROID_AVD_HOME=$ANDROID_AVD_HOME" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --force --name capture-test --device pixel_6 --path "$ANDROID_AVD_HOME/capture-test.avd" --package "system-images;android-35;google_apis;x86_64"
+          test -f "$ANDROID_AVD_HOME/capture-test.avd/config.ini"
+          printf 'avd.ini.encoding=UTF-8\npath=%s\n' "$ANDROID_AVD_HOME/capture-test.avd" > "$ANDROID_AVD_HOME/capture-test.ini"
+          "$ANDROID_HOME/emulator/emulator" -avd capture-test -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot > emulator.log 2>&1 &
+      - uses: actions/download-artifact@v4
+        with:
+          name: HTTP-Capture-Android-preview
+          run-id: 40302489377
+          github-token: ${{ github.token }}
+          path: http-capture/apps/capture_app/build/app/outputs/flutter-apk
+      - name: Exercise APK on Android
+        timeout-minutes: 8
+        run: |
+          timeout 120 adb wait-for-device || { cat emulator.log; exit 1; }
+          for i in $(seq 1 120); do
+            if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; then break; fi
+            sleep 2
+          done
+          adb shell input keyevent 82
+          python3 android-scripts/android_device_smoke.py
+      - name: Capture diagnostic logs
+        if: always()
+        run: timeout 10 "$ANDROID_HOME/platform-tools/adb" logcat -d > android-logcat.txt || true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: Android-device-smoke-result
+          path: |
+            android-device-smoke.json
+            android-logcat.txt
+            emulator.log
+          if-no-files-found: ignore

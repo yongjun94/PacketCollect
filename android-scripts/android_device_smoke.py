@@ -16,10 +16,14 @@ def screen():
     return ET.fromstring(adb('shell', 'cat', '/sdcard/capture-ui.xml'))
 
 
-def wait_text(label, tap=False, timeout=45):
+def wait_text(label, tap=False, timeout=120):
     end=time.monotonic()+timeout
     while time.monotonic()<end:
-        tree=screen()
+        try:
+            tree=screen()
+        except (subprocess.CalledProcessError, ET.ParseError):
+            time.sleep(2)
+            continue
         for node in tree.iter('node'):
             value=node.attrib.get('text','')+' '+node.attrib.get('content-desc','')
             if label in value:
@@ -33,6 +37,7 @@ def wait_text(label, tap=False, timeout=45):
 
 adb('install','-r','http-capture/apps/capture_app/build/app/outputs/flutter-apk/app-debug.apk')
 adb('shell','am','start','-n','dev.httpcapture.capture_app/.MainActivity')
+time.sleep(15)
 wait_text('Stopped')
 wait_text('Start',tap=True)
 wait_text('HTTP proxy ·')

@@ -52,6 +52,9 @@ jobs:
       - name: Start API35 emulator and exercise real Android proxy flow
         timeout-minutes: 15
         run: |
+          sudo rm -rf /usr/share/dotnet "$ANDROID_HOME/ndk"
+          rm -rf "$HOME/.gradle/caches" http-capture/apps/capture_app/build/app/intermediates
+          export PATH="$ANDROID_HOME/platform-tools:$PATH"
           sudo chmod 666 /dev/kvm
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "system-images;android-35;google_apis;x86_64" "emulator"
           echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --force --name capture-test --package "system-images;android-35;google_apis;x86_64"
@@ -71,7 +74,7 @@ jobs:
           retention-days: 14
       - name: Device diagnostics
         if: always()
-        run: adb logcat -d > android-logcat.txt || true
+        run: timeout 10 "$ANDROID_HOME/platform-tools/adb" logcat -d > android-logcat.txt || true
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

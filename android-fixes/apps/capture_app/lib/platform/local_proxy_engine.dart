@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:convert';
 import 'dart:math';
 import 'package:capture_core/capture_core.dart';
 
@@ -20,9 +21,10 @@ class LocalProxyEngine implements CaptureEngine {
   final _active = <Future<void>>{};
   HttpClient _client = HttpClient()..autoUncompress = false;
   HttpServer? _server;
+  ServerSocket? _listener;
   bool _paused = false;
   String _run = '';
-  int get port => _server?.port ?? 0;
+  int get port => _listener?.port ?? 0;
   @override
   Stream<Map<String, dynamic>> get events => _events.stream;
   @override
@@ -34,12 +36,57 @@ class LocalProxyEngine implements CaptureEngine {
     _client = HttpClient(context: upstreamContext)..autoUncompress = false;
     _run = _id();
     _paused = false;
-    _server = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
+    _server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    try { _listener = await ServerSocket.bind(InternetAddress.loopbackIPv4,port); }
+    catch (_) { await _server!.close(force:true); _server=null; rethrow; }
+    _listener!.listen((socket) {
+      final work=_accept(socket);_active.add(work);
+      unawaited(work.whenComplete(()=>_active.remove(work)));
+    });
     _server!.listen((request) {
       final work = _handle(request);
       _active.add(work);
       unawaited(work.whenComplete(() => _active.remove(work)));
     });
+  }
+  // dart:io parses CONNECT's authority-form as a URI, rejecting numeric IPs.
+  // Normalize only its request line into network-path form before its parser.
+  Future<void> _accept(Socket client) async {
+    _sockets.add(client);
+    final input=StreamIterator<List<int>>(client);
+    Socket? bridge;
+    try {
+      final prefix=<int>[];
+      while(!prefix.contains(10)) {
+        if(!await input.moveNext().timeout(const Duration(seconds:10))) return;
+        prefix.addAll(input.current);
+        if(prefix.length>65536) throw const FormatException('Proxy request line too large');
+      }
+      final end=prefix.indexOf(10)+1;
+      var line=latin1.decode(prefix.sublist(0,end));
+      if(line.startsWith('CONNECT ')) {
+        final parts=line.trimRight().split(' ');
+        if(parts.length!=3) throw const FormatException('Malformed CONNECT');
+        final target=parts[1].startsWith('//')?parts[1]:'//${parts[1]}';
+        line='CONNECT $target ${parts[2]}\r\n';
+      }
+      final server=_server;if(server==null)return;
+      bridge=await Socket.connect(InternetAddress.loopbackIPv4,server.port);
+      _sockets.add(bridge);
+      bridge.add(latin1.encode(line));bridge.add(prefix.sublist(end));
+      Stream<List<int>> rest() async* { while(await input.moveNext()) { yield input.current; } }
+      final upstream=bridge;
+      await Future.wait([
+        upstream.addStream(rest()).whenComplete(()=>upstream.close()),
+        client.addStream(upstream).whenComplete(()=>client.close()),
+      ]);
+    } catch (_) {
+      // Per-request HTTP/TLS failures are recorded by _handle; malformed prefaces
+      // have no valid HTTP session to invent. Closing affects this client only.
+    } finally {
+      await input.cancel();_sockets.remove(client);client.destroy();
+      if(bridge!=null){_sockets.remove(bridge);bridge.destroy();}
+    }
   }
   String _id() => '${DateTime.now().microsecondsSinceEpoch}_${Random.secure().nextInt(1 << 30)}';
   List<Header> _headers(HttpHeaders h) {
@@ -185,6 +232,7 @@ class LocalProxyEngine implements CaptureEngine {
     final server = _server;
     if (server == null) return;
     _server = null;
+    await _listener?.close();_listener=null;
     await server.close(force: true);
     for (final tls in _tlsServers.toList()) { await tls.close(force: true); }
     for (final socket in _sockets.toList()) { socket.destroy(); }

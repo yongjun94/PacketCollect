@@ -13,7 +13,7 @@ void main() {
       origin.listen((r) async { await r.drain<void>();r.response.headers.add('Set-Cookie','a=1');r.response.headers.add('Set-Cookie','b=2');r.response.add([0,255,2]);await r.response.close(); },onError:(Object _){});
       final events=<Map<String,dynamic>>[];
       final engine=LocalProxyEngine(root,tlsIdentity:(_) async=>identity(),decryptHosts:{'127.0.0.1'},upstreamContext:mode=='upstream-rejected'?null:trust());
-      final sub=engine.events.listen(events.add);
+      final sub=engine.events.listen((e) { events.add(e); print('TLS fixture event: $e'); });
       final client=HttpClient(context:mode=='client-rejected'?null:trust());
       try {
         await engine.start(port:0,decrypt:mode!='tunnel');client.findProxy=(_)=>'PROXY 127.0.0.1:${engine.port}';

@@ -59,7 +59,7 @@ def copy_windows_runtime(output):
 def validate_bundle(output, target):
     required = (['HTTP-Capture.exe', 'flutter_windows.dll', 'sqlite3.dll',
                  'proxy/http-capture-proxy.exe', 'data/icudtl.dat', 'data/flutter_assets']
-                if target == 'windows' else ['Contents/MacOS/capture_app', 'Contents/MacOS/proxy/http-capture-proxy'])
+                if target == 'windows' else ['Contents/MacOS/capture_app', 'Contents/Resources/proxy/http-capture-proxy'])
     for name in required:
         if not (output / name).exists():
             raise RuntimeError(f'Incomplete bundle: {name}')
@@ -115,7 +115,7 @@ def main():
     if output.exists():
         shutil.rmtree(output)
     shutil.copytree(source, output, symlinks=True)
-    proxy = output / ('proxy' if args.target == 'windows' else 'Contents/MacOS/proxy')
+    proxy = output / ('proxy' if args.target == 'windows' else 'Contents/Resources/proxy')
     shutil.copytree(ROOT / '.build/frozen/http-capture-proxy', proxy, symlinks=True)
     assets = output if args.target == 'windows' else output / 'Contents/Resources'
     runtimes = copy_windows_runtime(output) if args.target == 'windows' else []
@@ -135,7 +135,7 @@ def main():
                 'inventoryStage': 'before-final-signing', 'manualAcceptance': 'pending', 'runtimeLockSha256': hashlib.sha256(lock.read_bytes()).hexdigest(), 'files': files}
     (assets / 'resources/build-manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
     if args.target == 'macos':
-        run('/usr/bin/codesign', '--force', '--deep', '--sign', '-', output)
+        run('/usr/bin/codesign', '--force', '--sign', '-', output)
         run('/usr/bin/codesign', '--verify', '--deep', '--strict', output)
         run('/usr/bin/lipo', '-verify_arch', 'arm64', output / 'Contents/MacOS/capture_app')
         run('/usr/bin/lipo', '-verify_arch', 'arm64', proxy / 'http-capture-proxy')

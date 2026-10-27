@@ -1,5 +1,5 @@
 name: Android device smoke
-# Exercises the existing APK with scroll-aware accessibility checks.
+# Exercises the existing APK with viewport-aware scrolling.
 on:
   workflow_dispatch:
   push:

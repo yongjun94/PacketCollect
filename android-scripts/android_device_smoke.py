@@ -58,7 +58,7 @@ for attempt in range(6):
     tree=screen()
     fields=[n for n in tree.iter('node') if n.attrib.get('class')=='android.widget.EditText' and n.attrib.get('clickable')=='true']
     if fields: break
-    adb('shell','input','swipe','540','1850','540','1050','500')
+    adb('shell','input','swipe','540','1500','540','700','500')
     time.sleep(1)
 if not fields: raise RuntimeError('Host input not exposed: '+ET.tostring(tree,encoding='unicode'))
 coords=list(map(int,re.findall(r'\d+',fields[-1].attrib['bounds'])))

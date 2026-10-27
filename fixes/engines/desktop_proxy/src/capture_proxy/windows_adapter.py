@@ -9,6 +9,25 @@ KEY = r"Software\Microsoft\Windows\CurrentVersion\Internet Settings"
 NAMES = ("ProxyEnable", "ProxyServer", "ProxyOverride")
 
 
+def validate_proxy_takeover(before):
+    """Refuse to replace a configured PAC or an active explicit proxy.
+
+    This is not a PAC/WPAD resolver. The adapter does not chain an existing
+    proxy and must not imply that enterprise routing is preserved.
+    """
+    pac = before.get('AutoConfigURL')
+    if pac is not None and (not isinstance(pac, (list, tuple)) or len(pac) != 2):
+        raise RuntimeError('Cannot safely determine PAC configuration; system proxy not changed.')
+    if pac is not None and str(pac[0]).strip():
+        raise RuntimeError('PAC proxy detected. System proxy not changed; PAC upstream chaining is not implemented.')
+    enabled = before.get('ProxyEnable')
+    if enabled is not None:
+        if not isinstance(enabled, (list, tuple)) or len(enabled) != 2 or not isinstance(enabled[0], int):
+            raise RuntimeError('Cannot safely determine existing proxy state; system proxy not changed.')
+        if enabled[0] != 0:
+            raise RuntimeError('An existing system proxy is active. Automatic takeover is unavailable because upstream chaining is not implemented; system proxy not changed.')
+
+
 class WindowsProxy:
     def __init__(self, root: Path):
         self.journal = root / "proxy-journal.json"
@@ -57,9 +76,9 @@ class WindowsProxy:
         if self.journal.exists():
             raise RuntimeError('Unresolved proxy journal. Recover before starting.')
         before = self.read()
-        # PAC/WPAD are not overridden silently. WinInet UI includes auto-detect bits.
-        if before.get('AutoConfigURL'):
-            raise RuntimeError('PAC proxy detected. Use manual per-app proxy configuration.')
+        # Static proxy and PAC are not forwarded by this engine; do not replace them.
+        # WPAD and VPN-specific connection options are not checked here.
+        validate_proxy_takeover(before)
         installed = dict(before, ProxyEnable=[1, winreg.REG_DWORD],
                          ProxyServer=[f'127.0.0.1:{port}', winreg.REG_SZ],
                          ProxyOverride=['<-loopback>', winreg.REG_SZ])
@@ -126,3 +145,4 @@ try {
     if result.returncode != 0:
         raise RuntimeError('Certificate ' + action + ' failed: ' + result.stderr.strip()[-1500:])
     return {'fingerprint': fingerprint, 'trusted': json.loads(result.stdout.strip())}
+

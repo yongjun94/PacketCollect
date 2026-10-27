@@ -53,7 +53,7 @@ class _CaptureState extends State<_Capture> {
     });
   }
   Future<void> httpsSettings() async {
-    var info = await androidBridge.invokeMapMethod<String,dynamic>('caInfo');
+    var info = (await androidBridge.invokeMapMethod<String,dynamic>('caInfo'))!;
     if(!mounted) return;
     final hosts = TextEditingController(text:decryptHosts.join(', '));
     var enabled = decrypt;
@@ -63,10 +63,10 @@ class _CaptureState extends State<_Capture> {
       title:const Text('HTTPS decryption'),
       content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
         const Text('Only enable for traffic you are authorized to inspect. Install this CA in Android Settings > Security > Install certificate > CA certificate. Apps may reject user CAs or use pinning; no bypass is provided.'),
-        SelectableText('SHA-256: ${info!['fingerprint']}'),
+        SelectableText('SHA-256: ${info['fingerprint']}'),
         Text('CA in user/system store: ${info['trusted'] == true ? 'found' : 'not found'} (individual app trust may differ)'),
         if(certMessage != null) Text(certMessage!),
-        TextButton(onPressed:() async { try { final next=await androidBridge.invokeMapMethod<String,dynamic>('caInfo'); if(c.mounted) update(() { info=next; certMessage='Certificate status refreshed.'; }); } catch(e) { if(c.mounted) update(()=>certMessage='Unable to check certificate: $e'); } },child:const Text('Refresh CA status')),
+        TextButton(onPressed:() async { try { final next=(await androidBridge.invokeMapMethod<String,dynamic>('caInfo'))!; if(c.mounted) update(() { info=next; certMessage='Certificate status refreshed.'; }); } catch(e) { if(c.mounted) update(()=>certMessage='Unable to check certificate: $e'); } },child:const Text('Refresh CA status')),
         TextButton(onPressed:() async { try { final outcome=await androidBridge.invokeMethod<String>('caInstall'); if(c.mounted) update(()=>certMessage=outcome=='settings' ? 'Android 11+: save the public CA below, then install it in Android Security settings.' : 'Review the system installer result, then refresh CA status.'); } catch(e) { if(c.mounted) update(()=>certMessage='Unable to open certificate installer: $e'); } },child:const Text('Install CA / Open security settings')),
         TextButton(onPressed:()=>action(() async { await androidBridge.invokeMethod('export',{'path':info['path'],'name':'HTTP-Capture-Root.crt'}); }),child:const Text('Save public CA certificate')),
         TextButton(onPressed:()=>androidBridge.invokeMethod('securitySettings'),child:const Text('Remove CA: open Android security settings')),

@@ -72,9 +72,9 @@ class _CaptureState extends State<_Capture> {
         TextButton(onPressed:()=>androidBridge.invokeMethod('securitySettings'),child:const Text('Remove CA: open Android security settings')),
         const Text('To remove trust, delete only this certificate in Android user credentials after matching its fingerprint. The CA private key stays in Android Keystore.'),
         SwitchListTile(title:const Text('Enable HTTPS decryption'),value:enabled,onChanged:(v)=>update(() { enabled=v; hostError=null; })),
-        TextField(controller:hosts,onChanged:(_){ if(hostError!=null) update(()=>hostError=null); },decoration:InputDecoration(labelText:'Exact hosts, comma-separated',hintText:'example.com, api.example.com',errorText:hostError)),
+        TextField(controller:hosts,onChanged:(_){ if(hostError!=null) update(()=>hostError=null); },decoration:InputDecoration(labelText:'Exact hosts, comma-separated',hintText:'example.com, api.example.com')),
         const Text('Other hosts remain encrypted tunnels. TLS/HTTP 1.1 only; no HTTP/3 or WebSocket capture.'),
-      ])),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Cancel')),FilledButton(onPressed:(){
+      ])),actions:[if(hostError!=null) Text(hostError!,style:TextStyle(color:Theme.of(c).colorScheme.error)),TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Cancel')),FilledButton(onPressed:(){
         final values=hosts.text.split(',').map((h)=>h.trim().toLowerCase()).where((h)=>h.isNotEmpty).toSet();
         if(enabled && values.isEmpty) { update(()=>hostError='Enter at least one host, for example example.com.'); return; }
         if(enabled && values.any((h)=>InternetAddress.tryParse(h)==null && !RegExp(r'^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$').hasMatch(h))) { update(()=>hostError='Enter host names only, without https://, ports, paths or wildcards.'); return; }

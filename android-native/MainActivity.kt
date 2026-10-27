@@ -79,7 +79,8 @@ class MainActivity : FlutterActivity() {
                             if (pending != null) { result.error("busy", "Another system dialog is pending", null); return@setMethodCallHandler }
                             val path = certificateAuthority.info()["path"] as String
                             val intent = KeyChain.createInstallIntent().putExtra(KeyChain.EXTRA_CERTIFICATE,File(path).readBytes()).putExtra(KeyChain.EXTRA_NAME,"HTTP Capture Local Root")
-                            pending = result; startActivityForResult(intent, 703)
+                            pending = result
+                            try { startActivityForResult(intent, 703) } catch(e: Exception) { pending = null; throw e }
                         }
                     }
                     "securitySettings" -> { startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS)); result.success(null) }

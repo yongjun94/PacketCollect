@@ -61,7 +61,7 @@ class _CaptureState extends State<_Capture> {
         SwitchListTile(title:const Text('모든 호스트 복호화'),value:decrypt,onChanged:(v){setState(()=>decrypt=v);update((){});}),
         const Text('프록시를 사용하는 모든 HTTPS 연결에 적용합니다. 사용자 CA를 신뢰하지 않거나 인증서 고정을 사용하는 앱은 연결이 실패할 수 있습니다. 문제가 생기면 이 기능을 끄고 캡처를 다시 시작하세요.'),
         Text(info['trusted']==true ? '인증서: 기기 저장소에서 확인됨' : '인증서: 설치 필요'),
-        const Text('인증서 준비를 누르면 Downloads에 공개 인증서를 저장하고 보안 설정을 엽니다. Android 11 이상에서는 설정에서 CA 인증서를 직접 선택해 설치해야 합니다.'),
+        Text('인증서 준비를 누르면 Downloads에 HTTP-Capture-Root-${(info['fingerprint'] as String).replaceAll(":","").substring(56)}.crt를 저장하고 보안 설정을 엽니다. Android 11 이상에서는 설정에서 CA 인증서를 직접 선택해 설치해야 합니다.'),
         if(message!=null) Text(message!),
         FilledButton(onPressed:() async { try { final value=await androidBridge.invokeMethod<String>('prepareCa'); if(c.mounted) update(()=>message=value??'보안 설정에서 인증서를 설치해 주세요.'); } catch(e) { if(c.mounted) update(()=>message='인증서 준비 실패: $e'); } },child:const Text('인증서 준비 및 설정 열기')),
         TextButton(onPressed:() async {try {final next=(await androidBridge.invokeMapMethod<String,dynamic>('caInfo'))!;if(c.mounted)update((){info=next;message='인증서 상태를 확인했습니다.';});}catch(e){if(c.mounted)update(()=>message='상태 확인 실패: $e');}},child:const Text('설치 상태 확인')),

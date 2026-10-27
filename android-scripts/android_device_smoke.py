@@ -50,6 +50,11 @@ time.sleep(15)
 wait_text('Stopped')
 wait_text('HTTPS settings',tap=True)
 wait_text('모든 호스트 복호화',tap=True)
+wait_text('인증서 준비 및 설정 열기',tap=True)
+time.sleep(3)
+files=adb('shell','ls','/sdcard/Download')
+assert any(n.startswith('HTTP-Capture-Root-') and n.endswith('.crt') for n in files.splitlines()),files
+adb('shell','input','keyevent','4')
 wait_text('완료',tap=True)
 wait_text('HTTPS on')
 wait_text('Test TLS',tap=True)
@@ -111,7 +116,7 @@ rows=adb('shell','run-as','dev.httpcapture.capture_app.all','ls','files')
 # The exact support directory can be nested; inspect files without reading traffic values.
 listing=adb('shell','run-as','dev.httpcapture.capture_app.all','find','.','-name','*.response.bin')
 if not listing.strip(): raise RuntimeError('No captured body file persisted')
-report={'status':'passed','device':'Android API35 x86_64 emulator','apkLaunch':True,'nativeForegroundService':True,'localHttpBinaryRoundTrip':True,'sessionList':True,'harDocumentPicker':True,'bodyFilePersisted':True,'vpnProxyInstalled':True,'stopRestoresDefaultProxy':True,'backgroundKeepsCapture':True,'backExitReleasesProxy':True,'forceStopReleasesProxy':True,'realDevice':'not tested','httpsAllHostsEnabled':True,'httpsDecryption':True,'httpsLocalBinaryRoundTrip':True,'untrustedUpstreamRejected':True,'userCaInstall':'manual test pending'}
+report={'status':'passed','device':'Android API35 x86_64 emulator','apkLaunch':True,'nativeForegroundService':True,'localHttpBinaryRoundTrip':True,'sessionList':True,'harDocumentPicker':True,'bodyFilePersisted':True,'vpnProxyInstalled':True,'stopRestoresDefaultProxy':True,'backgroundKeepsCapture':True,'backExitReleasesProxy':True,'forceStopReleasesProxy':True,'realDevice':'not tested','httpsAllHostsEnabled':True,'publicCaSavedToDownloads':True,'httpsDecryption':True,'httpsLocalBinaryRoundTrip':True,'untrustedUpstreamRejected':True,'userCaInstall':'manual test pending'}
 Path('android-device-smoke.json').write_text(json.dumps(report,indent=2))
 print(json.dumps(report))
 

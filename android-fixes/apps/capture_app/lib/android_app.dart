@@ -8,7 +8,7 @@ import 'package:capture_core/capture_core.dart';
 import 'package:capture_export/capture_export.dart';
 import 'platform/local_proxy_engine.dart';
 
-const bouncyCastleLicense = '''Bouncy Castle bcpkix-jdk18on, bcprov-jdk18on, bcutil-jdk18on 1.86
+const bouncyCastleLicense = '''Bouncy Castle bcpkix-jdk15to18, bcprov-jdk15to18, bcutil-jdk15to18 1.86
 https://www.bouncycastle.org/license.html
 
 Copyright (c) 2000 - 2026 The Legion of the Bouncy Castle Inc. (https://www.bouncycastle.org)

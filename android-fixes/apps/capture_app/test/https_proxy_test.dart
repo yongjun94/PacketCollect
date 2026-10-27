@@ -9,15 +9,16 @@ void main() {
   for(final mode in ['decrypt', 'upstream-rejected', 'client-rejected', 'tunnel']) {
     test('HTTPS $mode uses actual TLS sockets', () async {
       final root=await Directory.systemTemp.createTemp('https-test');
+      final seen=<String>[];
       final origin=await HttpServer.bindSecure(InternetAddress.loopbackIPv4,0,identity());
-      origin.listen((r) async { await r.drain<void>();r.response.headers.add('Set-Cookie','a=1');r.response.headers.add('Set-Cookie','b=2');r.response.add([0,255,2]);await r.response.close(); },onError:(Object _){});
+      origin.listen((r) async { seen.add(r.uri.toString()); await r.drain<void>();r.response.headers.add('Set-Cookie','a=1');r.response.headers.add('Set-Cookie','b=2');r.response.add([0,255,2]);await r.response.close(); },onError:(Object _){});
       final events=<Map<String,dynamic>>[];
       final engine=LocalProxyEngine(root,tlsIdentity:(_) async=>identity(),decryptHosts:{'127.0.0.1'},upstreamContext:mode=='upstream-rejected'?null:trust());
       final sub=engine.events.listen((e) { events.add(e); print('TLS fixture event: $e'); });
       final client=HttpClient(context:mode=='client-rejected'?null:trust());
       try {
         await engine.start(port:0,decrypt:mode!='tunnel');client.findProxy=(_)=>'PROXY 127.0.0.1:${engine.port}';
-        Future<HttpClientResponse> send() async { final r=await client.postUrl(Uri.parse('https://127.0.0.1:${origin.port}/binary'));r.add([7,8]);return r.close(); }
+        Future<HttpClientResponse> send() async { final r=await client.postUrl(Uri.parse('https://127.0.0.1:${origin.port}/binary%2Fpart?query=a%2Fb'));r.add([7,8]);return r.close(); }
         if(mode=='client-rejected') {
           await expectLater(send(),throwsA(isA<HandshakeException>()));
         } else {
@@ -30,7 +31,8 @@ void main() {
         if(mode=='decrypt') {
           final session=events.single['session'];
           expect(session['captureStatus'],'complete');
-          expect(session['request']['url'],'https://127.0.0.1:${origin.port}/binary');
+          expect(session['request']['url'],'https://127.0.0.1:${origin.port}/binary%2Fpart?query=a%2Fb');
+          expect(seen.single,'/binary%2Fpart?query=a%2Fb');
           expect(session['request']['body']['size'],2);
           expect(await File('${root.path}/${session['response']['body']['path']}').readAsBytes(),[0,255,2]);
         }

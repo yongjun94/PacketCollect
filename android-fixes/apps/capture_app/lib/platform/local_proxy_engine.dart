@@ -148,8 +148,11 @@ class LocalProxyEngine implements CaptureEngine {
           upstream.destroy(); downstream.destroy();
         }
       } else {
-        final uri = tlsOrigin == null ? request.uri : tlsOrigin.replace(path: request.uri.path, query: request.uri.hasQuery ? request.uri.query : null);
-        if (tlsOrigin != null && request.uri.hasAuthority && (request.uri.host != tlsOrigin.host || request.uri.port != tlsOrigin.port)) throw FormatException('TLS request authority differs from CONNECT');
+        if (tlsOrigin != null && request.uri.hasAuthority &&
+            (request.uri.host != tlsOrigin.host || request.uri.port != tlsOrigin.port || (request.uri.hasScheme && request.uri.scheme != 'https'))) {
+          throw FormatException('TLS request authority differs from CONNECT');
+        }
+        final uri = tlsOrigin == null ? request.uri : tlsOrigin.resolveUri(request.uri);
         if (!['http', 'https'].contains(uri.scheme) || uri.host.isEmpty) throw FormatException('An absolute http:// proxy URL is required');
         if (['127.0.0.1', 'localhost', '::1'].contains(uri.host) && uri.port == port) {
           throw StateError('Proxy loop refused');

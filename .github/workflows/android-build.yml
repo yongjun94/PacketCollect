@@ -36,7 +36,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           p=Path('http-capture/apps/capture_app/android/app/build.gradle.kts')
-          s=p.read_text().replace('minSdk = flutter.minSdkVersion','minSdk = 29').replace('applicationId = "dev.httpcapture.capture_app"','applicationId = "dev.httpcapture.capture_app.settings"')
+          s=p.read_text().replace('minSdk = flutter.minSdkVersion','minSdk = 29').replace('applicationId = "dev.httpcapture.capture_app"','applicationId = "dev.httpcapture.capture_app.all"')
           s += '\ndependencies { implementation("org.bouncycastle:bcpkix-jdk15to18:1.86") }\n'
           p.write_text(s)
           PY
@@ -90,4 +90,5 @@ jobs:
             emulator.log
             capture-ui.xml
           if-no-files-found: ignore
+
 

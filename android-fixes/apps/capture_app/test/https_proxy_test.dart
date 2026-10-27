@@ -6,14 +6,14 @@ SecurityContext identity() => SecurityContext()
   ..useCertificateChain('test/tls/leaf.pem')..usePrivateKey('test/tls/leaf.key');
 SecurityContext trust() => SecurityContext(withTrustedRoots:false)..setTrustedCertificates('test/tls/ca.pem');
 void main() {
-  for(final mode in ['decrypt', 'upstream-rejected', 'client-rejected', 'tunnel']) {
+  for(final mode in ['decrypt', 'decrypt-all', 'upstream-rejected', 'client-rejected', 'tunnel']) {
     test('HTTPS $mode uses actual TLS sockets', () async {
       final root=await Directory.systemTemp.createTemp('https-test');
       final seen=<String>[];
       final origin=await HttpServer.bindSecure(InternetAddress.loopbackIPv4,0,identity());
       origin.listen((r) async { seen.add(r.uri.toString()); await r.drain<void>();r.response.headers.add('Set-Cookie','a=1');r.response.headers.add('Set-Cookie','b=2');r.response.add([0,255,2]);await r.response.close(); },onError:(Object _){});
       final events=<Map<String,dynamic>>[];
-      final engine=LocalProxyEngine(root,tlsIdentity:(_) async=>identity(),decryptHosts:{'127.0.0.1'},upstreamContext:mode=='upstream-rejected'?null:trust());
+      final engine=LocalProxyEngine(root,tlsIdentity:(_) async=>identity(),decryptHosts:mode=='decrypt-all'?{'localhost'}:{'127.0.0.1'},decryptAllHosts:mode=='decrypt-all',upstreamContext:mode=='upstream-rejected'?null:trust());
       final sub=engine.events.listen((e) { events.add(e); print('TLS fixture event: $e'); });
       final client=HttpClient(context:mode=='client-rejected'?null:trust());
       try {
@@ -28,7 +28,7 @@ void main() {
           if(mode!='upstream-rejected') expect(body,[0,255,2]);
         }
         client.close(force:true);await engine.stop();
-        if(mode=='decrypt') {
+        if(mode=='decrypt' || mode=='decrypt-all') {
           final session=events.single['session'];
           expect(session['captureStatus'],'complete');
           expect(session['request']['url'],'https://127.0.0.1:${origin.port}/binary%2Fpart?query=a%2Fb');
@@ -42,3 +42,4 @@ void main() {
     },timeout:const Timeout(Duration(seconds:45)));
   }
 }
+

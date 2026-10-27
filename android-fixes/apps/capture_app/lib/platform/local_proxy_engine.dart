@@ -11,11 +11,12 @@ class LocalProxyEngine implements CaptureEngine {
   final int bodyLimit;
   final Future<SecurityContext> Function(String host)? tlsIdentity;
   final Set<String> decryptHosts;
+  final bool decryptAllHosts;
   final SecurityContext? upstreamContext;
   final _tlsServers = <HttpServer>{};
   bool _decrypt = false;
   LocalProxyEngine(this.root, {this.bodyLimit = 64 * 1024 * 1024,
-    this.tlsIdentity, this.decryptHosts = const {}, this.upstreamContext});
+    this.tlsIdentity, this.decryptHosts = const {}, this.decryptAllHosts = false, this.upstreamContext});
   final _events = StreamController<Map<String, dynamic>>.broadcast(sync:true);
   final _sockets = <Socket>{};
   final _active = <Future<void>>{};
@@ -29,7 +30,7 @@ class LocalProxyEngine implements CaptureEngine {
   Stream<Map<String, dynamic>> get events => _events.stream;
   @override
   Future<void> start({int port = 8877, bool decrypt = false}) async {
-    if (decrypt && (tlsIdentity == null || decryptHosts.isEmpty)) throw StateError('Choose HTTPS hosts and configure a local CA first');
+    if (decrypt && (tlsIdentity == null || (!decryptAllHosts && decryptHosts.isEmpty))) throw StateError('Choose HTTPS hosts and configure a local CA first');
     _decrypt = decrypt;
     if (_server != null) throw StateError('Proxy already running');
     await Directory('${root.path}/bodies').create(recursive: true);
@@ -124,7 +125,7 @@ class LocalProxyEngine implements CaptureEngine {
         final authority = (request.uri.hasAuthority ? request.uri : Uri.parse('//${request.uri}')).replace(scheme:'https');
         if(authority.host.isEmpty || authority.userInfo.isNotEmpty) throw FormatException('Invalid CONNECT authority');
         req = HttpMessage(version: 'HTTP/${request.protocolVersion}', headers: _headers(request.headers), method: 'CONNECT', url: authority.toString());
-        if (_decrypt && decryptHosts.contains(authority.host.toLowerCase())) {
+        if (_decrypt && (decryptAllHosts || decryptHosts.contains(authority.host.toLowerCase()))) {
           await _intercept(request, authority);
           req = null; // Inner HTTP requests have their own complete/error sessions.
           return;
@@ -272,3 +273,4 @@ class _Body {
   }
   BodyReference ref(bool complete) => BodyReference(path, size, complete && !truncated);
 }
+

@@ -43,7 +43,6 @@ class _CaptureState extends State<_Capture> {
   Future<void>? stopping;
   String status = 'Stopped', filter = '';
   bool decrypt = false;
-  Set<String> decryptHosts = {};
   final identities = <String, Future<SecurityContext>>{};
   Future<SecurityContext> identity(String host) {
     if(identities.length >= 128) identities.clear();
@@ -53,34 +52,21 @@ class _CaptureState extends State<_Capture> {
     });
   }
   Future<void> httpsSettings() async {
-    var info = (await androidBridge.invokeMapMethod<String,dynamic>('caInfo'))!;
+    var info=(await androidBridge.invokeMapMethod<String,dynamic>('caInfo'))!;
     if(!mounted) return;
-    final hosts = TextEditingController(text:decryptHosts.join(', '));
-    var enabled = decrypt;
-    String? hostError;
-    String? certMessage;
+    String? message;
     await showDialog<void>(context:context,builder:(c)=>StatefulBuilder(builder:(c,update)=>AlertDialog(
-      title:const Text('HTTPS decryption'),
+      title:const Text('HTTPS 복호화'),
       content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
-        const Text('Only enable for traffic you are authorized to inspect. Install this CA in Android Settings > Security > Install certificate > CA certificate. Apps may reject user CAs or use pinning; no bypass is provided.'),
-        SelectableText('SHA-256: ${info['fingerprint']}'),
-        Text('CA in user/system store: ${info['trusted'] == true ? 'found' : 'not found'} (individual app trust may differ)'),
-        if(certMessage != null) Text(certMessage!),
-        TextButton(onPressed:() async { try { final next=(await androidBridge.invokeMapMethod<String,dynamic>('caInfo'))!; if(c.mounted) update(() { info=next; certMessage='Certificate status refreshed.'; }); } catch(e) { if(c.mounted) update(()=>certMessage='Unable to check certificate: $e'); } },child:const Text('Refresh CA status')),
-        TextButton(onPressed:() async { try { final outcome=await androidBridge.invokeMethod<String>('caInstall'); if(c.mounted) update(()=>certMessage=outcome=='settings' ? 'Android 11+: save the public CA below, then install it in Android Security settings.' : 'Review the system installer result, then refresh CA status.'); } catch(e) { if(c.mounted) update(()=>certMessage='Unable to open certificate installer: $e'); } },child:const Text('Install CA / Open security settings')),
-        TextButton(onPressed:()=>action(() async { await androidBridge.invokeMethod('export',{'path':info['path'],'name':'HTTP-Capture-Root.crt'}); }),child:const Text('Save public CA certificate')),
-        TextButton(onPressed:()=>androidBridge.invokeMethod('securitySettings'),child:const Text('Remove CA: open Android security settings')),
-        const Text('To remove trust, delete only this certificate in Android user credentials after matching its fingerprint. The CA private key stays in Android Keystore.'),
-        SwitchListTile(title:const Text('Enable HTTPS decryption'),value:enabled,onChanged:(v)=>update(() { enabled=v; hostError=null; })),
-        TextField(controller:hosts,onChanged:(_){ if(hostError!=null) update(()=>hostError=null); },decoration:InputDecoration(labelText:'Exact hosts, comma-separated',hintText:'example.com, api.example.com')),
-        const Text('Other hosts remain encrypted tunnels. TLS/HTTP 1.1 only; no HTTP/3 or WebSocket capture.'),
-      ])),actions:[if(hostError!=null) Text(hostError!,style:TextStyle(color:Theme.of(c).colorScheme.error)),TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Cancel')),FilledButton(onPressed:(){
-        final values=hosts.text.split(',').map((h)=>h.trim().toLowerCase()).where((h)=>h.isNotEmpty).toSet();
-        if(enabled && values.isEmpty) { update(()=>hostError='Enter at least one host, for example example.com.'); return; }
-        if(enabled && values.any((h)=>InternetAddress.tryParse(h)==null && !RegExp(r'^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$').hasMatch(h))) { update(()=>hostError='Enter host names only, without https://, ports, paths or wildcards.'); return; }
-        setState((){decrypt=enabled;decryptHosts=values;});Navigator.pop(c);
-      },child:const Text('Apply'))])));
-    // The dialog owns this controller until its exit transition completes.
+        SwitchListTile(title:const Text('모든 호스트 복호화'),value:decrypt,onChanged:(v){setState(()=>decrypt=v);update((){});}),
+        const Text('프록시를 사용하는 모든 HTTPS 연결에 적용합니다. 사용자 CA를 신뢰하지 않거나 인증서 고정을 사용하는 앱은 연결이 실패할 수 있습니다. 문제가 생기면 이 기능을 끄고 캡처를 다시 시작하세요.'),
+        Text(info['trusted']==true ? '인증서: 기기 저장소에서 확인됨' : '인증서: 설치 필요'),
+        const Text('인증서 준비를 누르면 Downloads에 공개 인증서를 저장하고 보안 설정을 엽니다. Android 11 이상에서는 설정에서 CA 인증서를 직접 선택해 설치해야 합니다.'),
+        if(message!=null) Text(message!),
+        FilledButton(onPressed:() async { try { final value=await androidBridge.invokeMethod<String>('prepareCa'); if(c.mounted) update(()=>message=value??'보안 설정에서 인증서를 설치해 주세요.'); } catch(e) { if(c.mounted) update(()=>message='인증서 준비 실패: $e'); } },child:const Text('인증서 준비 및 설정 열기')),
+        TextButton(onPressed:() async {try {final next=(await androidBridge.invokeMapMethod<String,dynamic>('caInfo'))!;if(c.mounted)update((){info=next;message='인증서 상태를 확인했습니다.';});}catch(e){if(c.mounted)update(()=>message='상태 확인 실패: $e');}},child:const Text('설치 상태 확인')),
+        ExpansionTile(title:const Text('인증서 정보 및 제거'),children:[SelectableText('SHA-256: ${info['fingerprint']}'),const Text('제거하려면 Android 사용자 인증서 설정에서 일치하는 지문을 확인하세요.'),TextButton(onPressed:()=>androidBridge.invokeMethod('securitySettings'),child:const Text('보안 설정 열기'))]),
+      ])),actions:[FilledButton(onPressed:()=>Navigator.pop(c),child:const Text('완료'))])));
   }
   Future<void> selfTestHttps() async {
     final info=await androidBridge.invokeMapMethod<String,dynamic>('caInfo');
@@ -131,7 +117,7 @@ class _CaptureState extends State<_Capture> {
     finally { if(mounted) setState(() => busy = false); }
   }
   Future<void> start() async {
-    final proxy = LocalProxyEngine(Directory(widget.root), tlsIdentity:identity, decryptHosts:decryptHosts);
+    final proxy = LocalProxyEngine(Directory(widget.root), tlsIdentity:identity, decryptAllHosts:true);
     subscription = proxy.events.listen((event) {
       if (event['type'] == 'session') {
         store.save(CaptureSession.fromJson(Map<String,dynamic>.from(event['session'])));
@@ -201,7 +187,7 @@ class _CaptureState extends State<_Capture> {
     final sessions = store.page(limit:200, filter:filter).reversed.toList();
     return PopScope(canPop: !running, onPopInvokedWithResult:(didPop,result) async { if(!didPop){await action(() async { await stop(); await SystemNavigator.pop(); });} }, child: Scaffold(appBar: AppBar(title: const Text('HTTP Capture · HTTPS Preview')), body: SafeArea(child: Column(children:[
       Padding(padding:const EdgeInsets.all(12),child: Text(status)),
-      const Padding(padding:EdgeInsets.symmetric(horizontal:12),child:Text('HTTP + optional HTTPS decryption for selected hosts. Proxy-aware apps only. Switching apps keeps capture active.')),
+      const Padding(padding:EdgeInsets.symmetric(horizontal:12),child:Text('HTTP + optional HTTPS decryption for all proxy-aware hosts. Switching apps keeps capture active.')),
       const Padding(padding:EdgeInsets.all(12),child:Text('Temporary VPN proxy only. Wi-Fi proxy settings must stay unchanged. Stop or closing this app releases the VPN; switching apps keeps capture active. Proxy-aware apps only; this replaces any existing VPN.')),
       Wrap(spacing:8,children:[
         TextButton(onPressed:()=>showLicensePage(context:context),child:const Text('Licenses')),
@@ -220,4 +206,5 @@ class _CaptureState extends State<_Capture> {
     ]))));
   }
 }
+
 

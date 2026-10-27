@@ -1,19 +1,9 @@
-# Android HTTPS preview
+# Android all-host HTTPS preview
 
-Adds opt-in TLS interception for exact user-selected hosts. A separate dev.httpcapture.capture_app.settings package preserves Safe Preview data; CI debug signing is not a production release key. Do not run both captures at once.
+HTTPS decryption is opt-in and applies to all proxy-aware CONNECT hosts, without a host list. Apps rejecting user CAs, pinned certificates, HTTP/3, client certificates, and proxy-bypassing traffic remain unsupported and may fail while interception is enabled; turn decryption off and restart capture.
 
-Stop/Back exit/force-stop release the VPN proxy; Home/app switching keeps it alive. No Wi-Fi proxy writes. No root, device owner, pinning bypass or system CA changes.
+Certificate preparation writes the public CA to Downloads using Android MediaStore and opens security settings. Android 11+ requires manual installation through system settings; Android 10 opens the user-confirmed installer. Certificate/private key remain per-app, generated via Android Keystore; installing this separate debug preview requires its own CA. Remove the corresponding user CA manually by fingerprint when no longer required. Real-device CA installation remains pending.
 
-## Use
-Open HTTPS settings while stopped. Save the public CA certificate to local storage. Android 11+ requires the user to install it in Settings > Security > Install certificate > CA certificate. Match the SHA-256 fingerprint. Return to HTTPS settings to refresh store status. Enable HTTPS decryption and enter exact hosts separated by commas, without schemes, ports or wildcards. Apply, then Start and approve the VPN. Other hosts use encrypted CONNECT tunneling. Apps which ignore the proxy, reject user CAs, use pinning, HTTP/3, client certificates or WebSockets may not work with interception. Remove those hosts from the allowlist to restore tunneling. Settings are intentionally opt-in again after app restart.
+Stop/Back exit/force-stop release the VPN proxy; switching apps keeps capture active. No Wi-Fi proxy writes. No root, device owner, pinning bypass, or system CA modification. App ID dev.httpcapture.capture_app.all preserves data in previous previews; it uses debug signing and is not a production release.
 
-Remove only this CA in Android user credentials by matching the fingerprint. App uninstall does not necessarily remove a user-installed CA. The application never silently installs/removes trust. Capture stop releases the proxy, but leaves the user-approved CA installed.
-
-## Implementation
-Root RSA key generated in Android Keystore; non-exportable, not included in APK, no cloud backup. Root certificate has CA pathLen=0 and keyCertSign/cRLSign; host certificates have SAN and serverAuth, seven-day validity. Leaf keys exist only in app memory/IPC and are not exported. Bouncy Castle bcpkix-jdk15to18 1.86 (and bcprov/bcutil transitives) constructs certificates; TLS is Dart dart:io. Upstream certificates/hostnames are verified with the default trust context in production; there is no accept-all callback. Only the explicit loopback self-test trusts the test origin CA. Parsed HTTP/1.1 headers retain duplicate values but not original global order/casing. Body capture limit 64 MiB per side. No HTTP/2, HTTP/3, packet TCP/UDP engine, or WebSocket capture in this variant. Per-connection loopback TLS listener, a concurrency guard targeting 64 simultaneous interceptions; performance not benchmarked.
-
-## Validation
-CI performs TLS proxy tests: binary POST/response capture, client rejects untrusted CA, upstream rejects untrusted origin, tunnel-only mode. Emulator self-test creates device-local HTTPS origin with generated CA, checks decrypted request/response and HAR base64, and confirms untrusted upstream rejection. Existing VPN cleanup/regression checks remain. Real-device CA installation, browser/app capture, and this variant's Fiddler/DevTools imports require manual acceptance. Do not equate the self-test with system/browser CA trust validation.
-
-
-Apply shows an inline error if HTTPS is enabled with missing/invalid exact host names. Certificate install opens the platform installer on Android 10 (with user consent) or Security settings on Android 11+ after saving the public CA. Refresh CA status checks the certificate store again. Removing user CA trust requires the user to remove the matching certificate through Android Settings. Managed-device policy integrations are not implemented.
+Upstream server certificates remain verified against default trusted roots. HTTP/1.1 parsed headers may be normalized, each body is capped at 64 MiB, and there is no full packet-level TCP/UDP capture. SAZ/HAR use the existing common exporters.

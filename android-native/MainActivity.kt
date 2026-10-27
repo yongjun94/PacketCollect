@@ -2,6 +2,10 @@ package dev.httpcapture.capture_app
 
 import android.app.Activity
 import android.content.Intent
+import android.content.ContentValues
+import android.net.Uri
+import android.os.Environment
+import android.provider.MediaStore
 import android.net.VpnService
 import android.os.Handler
 import android.os.Looper
@@ -40,6 +44,32 @@ class MainActivity : FlutterActivity() {
             result.error("manual_proxy", "A manual Wi-Fi proxy remains. Restore it in Wi-Fi settings; Android does not permit this app to edit it.", null)
         } else result.success(state)
     }
+    /** Only the public certificate is copied; the CA private key stays in Android Keystore. */
+    private fun savePublicCa(): String {
+        val info = certificateAuthority.info()
+        val cert = File(info["path"] as String)
+        val suffix = (info["fingerprint"] as String).replace(":", "").takeLast(8)
+        val name = "HTTP-Capture-Root-$suffix.crt"
+        val prefs = getSharedPreferences("capture_ca_export", MODE_PRIVATE)
+        val previous = prefs.getString("uri", null)?.let { Uri.parse(it) }
+        if(previous != null) {
+            try { requireNotNull(contentResolver.openOutputStream(previous,"wt")).use { out -> cert.inputStream().use { it.copyTo(out) } }; return name }
+            catch(_: Exception) { prefs.edit().remove("uri").apply() }
+        }
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME,name)
+            put(MediaStore.MediaColumns.MIME_TYPE,"application/x-x509-ca-cert")
+            put(MediaStore.MediaColumns.RELATIVE_PATH,Environment.DIRECTORY_DOWNLOADS)
+            put(MediaStore.MediaColumns.IS_PENDING,1)
+        }
+        val uri=requireNotNull(contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI,values))
+        try {
+            requireNotNull(contentResolver.openOutputStream(uri,"w")).use { out -> cert.inputStream().use { it.copyTo(out) } }
+            contentResolver.update(uri,ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING,0) },null,null)
+            prefs.edit().putString("uri",uri.toString()).apply()
+        } catch(e: Exception) { contentResolver.delete(uri,null,null); throw e }
+        return name
+    }
     override fun configureFlutterEngine(engine: FlutterEngine) {
         super.configureFlutterEngine(engine)
         channel = MethodChannel(engine.dartExecutor.binaryMessenger, "dev.httpcapture/android")
@@ -69,6 +99,27 @@ class MainActivity : FlutterActivity() {
                                 val ca = certificateAuthority
                                 val value = if(call.method == "caInfo") ca.info() else ca.leaf(requireNotNull(host))
                                 runOnUiThread { result.success(value) }
+                            } catch(e: Exception) { runOnUiThread { result.error("certificate",e.message,null) } }
+                        }.start()
+                    }
+                    "prepareCa" -> {
+                        if(pending != null) { result.error("busy", "Another system dialog is pending", null); return@setMethodCallHandler }
+                        Thread {
+                            try {
+                                val name=savePublicCa()
+                                runOnUiThread {
+                                    try {
+                                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                            startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS))
+                                            result.success("Downloads/$name 저장 완료. 보안 설정에서 CA 인증서 설치를 선택하세요.")
+                                        } else {
+                                            val path=certificateAuthority.info()["path"] as String
+                                            val intent=KeyChain.createInstallIntent().putExtra(KeyChain.EXTRA_CERTIFICATE,File(path).readBytes()).putExtra(KeyChain.EXTRA_NAME,"HTTP Capture Local Root")
+                                            pending=result
+                                            try { startActivityForResult(intent,703) } catch(e: Exception) { pending=null; throw e }
+                                        }
+                                    } catch(e: Exception) { result.error("certificate",e.message,null) }
+                                }
                             } catch(e: Exception) { runOnUiThread { result.error("certificate",e.message,null) } }
                         }.start()
                     }
@@ -156,4 +207,5 @@ class MainActivity : FlutterActivity() {
         super.onDestroy()
     }
 }
+
 

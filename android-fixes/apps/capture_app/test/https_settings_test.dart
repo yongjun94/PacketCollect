@@ -10,7 +10,7 @@ void main() {
     final dir=Directory.systemTemp.createTempSync('capture-settings-');
     const channel=MethodChannel('dev.httpcapture/android');
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel,(call) async {
-      if(call.method=='caInfo') return {'path':'/tmp/root.crt','fingerprint':'TEST','trusted':false,'pem':''};
+      if(call.method=='caInfo') return {'path':'/tmp/root.crt','fingerprint':'A' * 64,'trusted':false,'pem':''};
       if(call.method=='prepareCa') return 'certificate prepared';
       return null;
     });

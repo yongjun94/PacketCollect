@@ -24,6 +24,13 @@ def wait_text(label, tap=False, timeout=120):
         except (subprocess.CalledProcessError, ET.ParseError):
             time.sleep(2)
             continue
+        # A freshly booted Google APIs image may show an unrelated system ANR.
+        wait_dialog=next((n for n in tree.iter('node') if n.attrib.get('resource-id') == 'android:id/aerr_wait'),None)
+        if wait_dialog is not None:
+            coords=list(map(int,re.findall(r'\d+',wait_dialog.attrib['bounds'])))
+            adb('shell','input','tap',str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
+            time.sleep(3)
+            continue
         for node in tree.iter('node'):
             value=node.attrib.get('text','')+' '+node.attrib.get('content-desc','')
             if label in value:
@@ -42,6 +49,7 @@ adb('shell','am','start','-n','dev.httpcapture.capture_app.settings/dev.httpcapt
 time.sleep(15)
 wait_text('Stopped')
 wait_text('HTTPS settings',tap=True)
+adb('shell','input','swipe','540','1700','540','800','500')
 wait_text('Enable HTTPS decryption',tap=True)
 wait_text('Apply',tap=True)
 wait_text('Enter at least one host')

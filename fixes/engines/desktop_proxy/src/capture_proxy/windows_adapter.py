@@ -99,7 +99,8 @@ class WindowsProxy:
         state = json.loads(self.journal.read_text())
         current = self.read()
         # Accept a partly applied tuple, but refuse another actor's values.
-        if any(current[n] not in (state['before'][n], state['installed'][n]) for n in NAMES):
+        if (current.get('AutoConfigURL') != state['before'].get('AutoConfigURL') or
+                any(current[n] not in (state['before'][n], state['installed'][n]) for n in NAMES)):
             raise RuntimeError('Proxy changed externally. Journal kept; manual review required.')
         self.write(state['before'])
         self.journal.unlink()

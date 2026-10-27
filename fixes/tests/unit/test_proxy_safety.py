@@ -1,5 +1,6 @@
 """Safety decisions run on any OS without touching actual network settings."""
 import sys
+import json
 import types
 import unittest
 from pathlib import Path
@@ -22,6 +23,19 @@ class ProxyTakeoverSafetyTests(unittest.TestCase):
                 validate_proxy_takeover(state)
         validate_proxy_takeover({'ProxyEnable': [0, 4], 'AutoConfigURL': None})
         validate_proxy_takeover({'ProxyEnable': [0, 4], 'AutoConfigURL': ['', 1]})
+
+    def test_restore_refuses_to_overwrite_when_pac_changed_externally(self):
+        with TemporaryDirectory() as root:
+            proxy = WindowsProxy(Path(root))
+            proxy._require = lambda: None
+            before = {'ProxyEnable': [0, 4], 'ProxyServer': None, 'ProxyOverride': None, 'AutoConfigURL': None}
+            installed = dict(before, ProxyEnable=[1, 4], ProxyServer=['127.0.0.1:8877', 1], ProxyOverride=['<-loopback>', 1])
+            proxy.journal.write_text(json.dumps({'before': before, 'installed': installed}))
+            proxy.read = lambda: dict(installed, AutoConfigURL=['https://company/pac', 1])
+            proxy.write = lambda value: self.fail('External PAC change must not be overwritten')
+            with self.assertRaisesRegex(RuntimeError, 'externally'):
+                proxy.restore()
+            self.assertTrue(proxy.journal.exists())
 
     def test_rejected_takeover_creates_no_journal_and_makes_no_writes(self):
         with TemporaryDirectory() as root:

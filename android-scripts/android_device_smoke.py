@@ -53,9 +53,14 @@ adb('shell','input','swipe','540','1700','540','800','500')
 wait_text('Enable HTTPS decryption',tap=True)
 wait_text('Apply',tap=True)
 wait_text('Enter at least one host')
-tree=screen()
-fields=[n for n in tree.iter('node') if n.attrib.get('class')=='android.widget.EditText' and n.attrib.get('clickable')=='true']
-if not fields: raise RuntimeError('Host input not exposed in Android accessibility tree')
+fields=[]
+for attempt in range(6):
+    tree=screen()
+    fields=[n for n in tree.iter('node') if n.attrib.get('class')=='android.widget.EditText' and n.attrib.get('clickable')=='true']
+    if fields: break
+    adb('shell','input','swipe','540','1850','540','1050','500')
+    time.sleep(1)
+if not fields: raise RuntimeError('Host input not exposed: '+ET.tostring(tree,encoding='unicode'))
 coords=list(map(int,re.findall(r'\d+',fields[-1].attrib['bounds'])))
 adb('shell','input','tap',str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
 adb('shell','input','text','example.com')

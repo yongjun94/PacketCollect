@@ -1,4 +1,5 @@
 name: Android device smoke
+# Exercises the previously built APK with updated accessibility-aware UI checks.
 on:
   workflow_dispatch:
   push:

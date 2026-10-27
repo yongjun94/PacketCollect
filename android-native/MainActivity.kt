@@ -7,6 +7,8 @@ import android.os.Handler
 import android.os.Looper
 import android.net.ConnectivityManager
 import android.provider.Settings
+import android.security.KeyChain
+import android.os.Build
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -70,6 +72,16 @@ class MainActivity : FlutterActivity() {
                             } catch(e: Exception) { runOnUiThread { result.error("certificate",e.message,null) } }
                         }.start()
                     }
+                    "caInstall" -> {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS)); result.success("settings")
+                        } else {
+                            if (pending != null) { result.error("busy", "Another system dialog is pending", null); return@setMethodCallHandler }
+                            val path = certificateAuthority.info()["path"] as String
+                            val intent = KeyChain.createInstallIntent().putExtra(KeyChain.EXTRA_CERTIFICATE,File(path).readBytes()).putExtra(KeyChain.EXTRA_NAME,"HTTP Capture Local Root")
+                            pending = result; startActivityForResult(intent, 703)
+                        }
+                    }
                     "securitySettings" -> { startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS)); result.success(null) }
                     "wifiSettings" -> { startActivity(Intent(Settings.ACTION_WIFI_SETTINGS)); result.success(null) }
                     "export" -> {
@@ -114,6 +126,10 @@ class MainActivity : FlutterActivity() {
                 catch (e: Exception) { result?.error("vpn",e.message,null) }
             } else result?.error("vpn", "VPN permission denied", null)
         }
+        if (requestCode == 703) {
+            val result = pending; pending = null
+            result?.success(if(resultCode == Activity.RESULT_OK) "installer_returned" else "cancelled")
+        }
         if (requestCode == 702) {
             val result = pending; val path = exportPath; pending = null; exportPath = null
             val uri = data?.data
@@ -139,3 +155,4 @@ class MainActivity : FlutterActivity() {
         super.onDestroy()
     }
 }
+

@@ -1,6 +1,6 @@
 # Android HTTPS preview
 
-Adds opt-in TLS interception for exact user-selected hosts. A separate dev.httpcapture.capture_app.https package preserves Safe Preview data; CI debug signing is not a production release key. Do not run both captures at once.
+Adds opt-in TLS interception for exact user-selected hosts. A separate dev.httpcapture.capture_app.settings package preserves Safe Preview data; CI debug signing is not a production release key. Do not run both captures at once.
 
 Stop/Back exit/force-stop release the VPN proxy; Home/app switching keeps it alive. No Wi-Fi proxy writes. No root, device owner, pinning bypass or system CA changes.
 
@@ -14,3 +14,6 @@ Root RSA key generated in Android Keystore; non-exportable, not included in APK,
 
 ## Validation
 CI performs TLS proxy tests: binary POST/response capture, client rejects untrusted CA, upstream rejects untrusted origin, tunnel-only mode. Emulator self-test creates device-local HTTPS origin with generated CA, checks decrypted request/response and HAR base64, and confirms untrusted upstream rejection. Existing VPN cleanup/regression checks remain. Real-device CA installation, browser/app capture, and this variant's Fiddler/DevTools imports require manual acceptance. Do not equate the self-test with system/browser CA trust validation.
+
+
+Apply shows an inline error if HTTPS is enabled with missing/invalid exact host names. Certificate install opens the platform installer on Android 10 (with user consent) or Security settings on Android 11+ after saving the public CA. Refresh CA status checks the certificate store again. Removing user CA trust requires the user to remove the matching certificate through Android Settings. Managed-device policy integrations are not implemented.

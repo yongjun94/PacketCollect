@@ -53,28 +53,34 @@ class _CaptureState extends State<_Capture> {
     });
   }
   Future<void> httpsSettings() async {
-    final info = await androidBridge.invokeMapMethod<String,dynamic>('caInfo');
+    var info = await androidBridge.invokeMapMethod<String,dynamic>('caInfo');
     if(!mounted) return;
     final hosts = TextEditingController(text:decryptHosts.join(', '));
     var enabled = decrypt;
+    String? hostError;
+    String? certMessage;
     await showDialog<void>(context:context,builder:(c)=>StatefulBuilder(builder:(c,update)=>AlertDialog(
       title:const Text('HTTPS decryption'),
       content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
         const Text('Only enable for traffic you are authorized to inspect. Install this CA in Android Settings > Security > Install certificate > CA certificate. Apps may reject user CAs or use pinning; no bypass is provided.'),
         SelectableText('SHA-256: ${info!['fingerprint']}'),
         Text('CA in user/system store: ${info['trusted'] == true ? 'found' : 'not found'} (individual app trust may differ)'),
+        if(certMessage != null) Text(certMessage!),
+        TextButton(onPressed:() async { try { final next=await androidBridge.invokeMapMethod<String,dynamic>('caInfo'); if(c.mounted) update(() { info=next; certMessage='Certificate status refreshed.'; }); } catch(e) { if(c.mounted) update(()=>certMessage='Unable to check certificate: $e'); } },child:const Text('Refresh CA status')),
+        TextButton(onPressed:() async { try { final outcome=await androidBridge.invokeMethod<String>('caInstall'); if(c.mounted) update(()=>certMessage=outcome=='settings' ? 'Android 11+: save the public CA below, then install it in Android Security settings.' : 'Review the system installer result, then refresh CA status.'); } catch(e) { if(c.mounted) update(()=>certMessage='Unable to open certificate installer: $e'); } },child:const Text('Install CA / Open security settings')),
         TextButton(onPressed:()=>action(() async { await androidBridge.invokeMethod('export',{'path':info['path'],'name':'HTTP-Capture-Root.crt'}); }),child:const Text('Save public CA certificate')),
-        TextButton(onPressed:()=>androidBridge.invokeMethod('securitySettings'),child:const Text('Open Android security settings')),
+        TextButton(onPressed:()=>androidBridge.invokeMethod('securitySettings'),child:const Text('Remove CA: open Android security settings')),
         const Text('To remove trust, delete only this certificate in Android user credentials after matching its fingerprint. The CA private key stays in Android Keystore.'),
-        SwitchListTile(title:const Text('Enable HTTPS decryption'),value:enabled,onChanged:(v)=>update(()=>enabled=v)),
-        TextField(controller:hosts,decoration:const InputDecoration(labelText:'Exact hosts, comma-separated',hintText:'example.com, api.example.com')),
+        SwitchListTile(title:const Text('Enable HTTPS decryption'),value:enabled,onChanged:(v)=>update(() { enabled=v; hostError=null; })),
+        TextField(controller:hosts,onChanged:(_){ if(hostError!=null) update(()=>hostError=null); },decoration:InputDecoration(labelText:'Exact hosts, comma-separated',hintText:'example.com, api.example.com',errorText:hostError)),
         const Text('Other hosts remain encrypted tunnels. TLS/HTTP 1.1 only; no HTTP/3 or WebSocket capture.'),
       ])),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Cancel')),FilledButton(onPressed:(){
         final values=hosts.text.split(',').map((h)=>h.trim().toLowerCase()).where((h)=>h.isNotEmpty).toSet();
-        if(enabled && (values.isEmpty || values.any((h)=>!RegExp(r'^[a-z0-9.:-]+$').hasMatch(h)))) return;
+        if(enabled && values.isEmpty) { update(()=>hostError='Enter at least one host, for example example.com.'); return; }
+        if(enabled && values.any((h)=>InternetAddress.tryParse(h)==null && !RegExp(r'^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$').hasMatch(h))) { update(()=>hostError='Enter host names only, without https://, ports, paths or wildcards.'); return; }
         setState((){decrypt=enabled;decryptHosts=values;});Navigator.pop(c);
       },child:const Text('Apply'))])));
-    // Dialog controller is reclaimed with this settings view.
+    // The dialog owns this controller until its exit transition completes.
   }
   Future<void> selfTestHttps() async {
     final info=await androidBridge.invokeMapMethod<String,dynamic>('caInfo');
@@ -214,3 +220,4 @@ class _CaptureState extends State<_Capture> {
     ]))));
   }
 }
+

@@ -37,7 +37,7 @@ jobs:
           from pathlib import Path
           p=Path('http-capture/apps/capture_app/android/app/build.gradle.kts')
           s=p.read_text().replace('minSdk = flutter.minSdkVersion','minSdk = 29').replace('applicationId = "dev.httpcapture.capture_app"','applicationId = "dev.httpcapture.capture_app.https"')
-          s += '\ndependencies { implementation("org.bouncycastle:bcpkix-jdk18on:1.86") }\n'
+          s += '\ndependencies { implementation("org.bouncycastle:bcpkix-jdk15to18:1.86") }\n'
           p.write_text(s)
           PY
       - name: Analyze and run HTTP proxy integration tests

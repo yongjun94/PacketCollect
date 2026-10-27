@@ -4,6 +4,7 @@
 This tool creates a new directory; it never replaces an existing checkout.
 """
 import argparse
+import os
 import shutil
 import stat
 import subprocess
@@ -38,7 +39,7 @@ def apply_overlay(source, target):
 
 
 def materialize(repo, platform, destination, generate_android=False):
-    destination = destination.resolve()
+    destination = Path(os.path.abspath(destination))
     if destination.exists() or destination.is_symlink():
         raise FileExistsError(f'Destination already exists: {destination}')
     if platform == 'android' and not generate_android:

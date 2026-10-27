@@ -54,6 +54,16 @@ class MaterializeTests(unittest.TestCase):
             m.materialize(self.repo, 'windows', dest)
         self.assertEqual((dest / 'important').read_text(), 'keep')
 
+    def test_dangling_destination_symlink_is_not_followed(self):
+        link = self.base / 'linked'
+        try:
+            link.symlink_to(self.base / 'missing', target_is_directory=True)
+        except (OSError, NotImplementedError):
+            self.skipTest('creating symlinks is unavailable')
+        with self.assertRaises(FileExistsError):
+            m.materialize(self.repo, 'windows', link)
+        self.assertFalse((self.base / 'missing').exists())
+
     def test_android_requires_flutter_and_assembles_native_runner(self):
         out = self.base / 'android'
         with self.assertRaises(ValueError):

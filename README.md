@@ -10,8 +10,8 @@ Windows, macOS, Android용 로컬 HTTP 캡처 실험 프로젝트입니다. 모�
 | SAZ/HAR 출력 | `packages/capture_export` | 동일 공통 패키지 | 동일 공통 패키지 |
 | UI | `fixes/.../app.dart` 데스크톱 UI | `macos-fixes/.../app.dart` 별도 수정본 | `android-fixes/.../android_app.dart` 별도 UI |
 | 캡처 엔진 | Python/mitmproxy 별도 프로세스 | Python/mitmproxy 별도 프로세스 | Dart 로컬 프록시 + Kotlin VPN/CA |
-| OS 설정 | WinINet/CurrentUser CA | OS 자동 프록시/CA 관리 미완성 | VPN 단위 프록시. CA 설치는 Android 시스템 절차 |
-| 검증 | 사용자가 Windows 캡처와 Fiddler SAZ/DevTools HAR 가져오기 확인 | Apple Silicon preview 빌드/자동 테스트; 실제 사용자 환경 미검증, 서명·공증 필요 | API35 에뮬레이터 검증. 실기기 HTTPS/CA 설치 미검증 |
+| OS 설정 | WinINet/CurrentUser CA | Start에서 시스템 HTTP/HTTPS 프록시 자동 적용·Stop에서 복원. CA 신뢰는 수동 | VPN 단위 프록시. CA 설치는 Android 시스템 절차 |
+| 검증 | 사용자가 Windows 캡처와 Fiddler SAZ/DevTools HAR 가져오기 확인 | Apple Silicon 빌드·자동 테스트 통과, 사용자 curl HTTP 캡처 확인. 새 자동 프록시·브라우저 HTTPS는 실기기 미검증 | API35 에뮬레이터 검증. 실기기 HTTPS/CA 설치 미검증 |
 
 Android는 프록시를 사용하는 앱만 지원하며 전체 TCP/UDP 패킷 캡처 엔진이 아닙니다. 사용자 CA를 신뢰하지 않는 앱, 인증서 고정, HTTP/3는 복호화되지 않을 수 있습니다. iOS 독립 캡처는 구현되지 않았습니다.
 
@@ -36,6 +36,12 @@ python3 scripts/materialize.py android --generate-android --output ../http-captu
 ```
 
 Windows PowerShell에서는 `python scripts/materialize.py windows --output ../http-capture-windows`를 사용합니다. Android는 Flutter가 PATH에 있어야 하며 해당 플랫폼 runner를 새로 생성합니다. 각 출력 폴더의 `packages/`는 같은 공통 소스를 사용하고, 앱 및 OS 코드는 플랫폼별로 선택됩니다. 이 명령은 설치 패키지를 빌드하거나 서명하지 않습니다. 기존 GitHub Actions도 아직 개별 overlay를 사용하므로 코드 변경 시 동기화가 필요합니다.
+
+## macOS 자동 캡처 사용
+
+최신 Apple Silicon preview는 Start에서 시스템 HTTP/HTTPS 프록시를 연결합니다. macOS 관리자 승인이 필요할 수 있습니다. 기존 프록시/PAC/자동 검색을 발견하면 변경을 거부합니다. Stop·정상 종료 시 원래 설정을 복원합니다. 강제 종료·전원 손실 직후 복원은 보장되지 않으며 재실행 또는 Settings의 Restore / recover로 복구합니다. CA 신뢰는 키체인에서 수동 설정합니다. 모든 패킷이 아니라 시스템 프록시를 따르는 HTTP/HTTPS가 대상이며 기존 bypass 목록도 유지됩니다.
+
+빌드 [40611423214](https://github.com/yongjun94/PacketCollect/actions/runs/40611423214): arm64 빌드, Flutter analyze, UI 4건, exporter 7건, 프록시 mock 테스트 4건 및 내장 엔진 smoke 통과. 실제 관리자 승인·브라우저 HTTPS·강제 종료 후 복원은 미검증입니다.
 
 ## 기업 네트워크와 보안
 

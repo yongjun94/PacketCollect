@@ -4,6 +4,14 @@
 
 Windows·macOS·Android에서 HTTP/HTTPS를 로컬 수집하고 SAZ/HAR로 내보내는 개발 프로젝트입니다. **실제 소스는 `http-capture/` 한 곳에 있습니다.** ZIP 압축 해제나 `fixes` 덮어쓰기 없이 해당 폴더를 직접 수정·빌드합니다.
 
+## 전체 구조와 화면 안내
+
+![HTTP Capture 전체 아키텍처](docs/images/architecture.svg)
+
+[상세 한국어 안내](docs/architecture.ko.md) · [Detailed English guide](docs/architecture.en.md)
+
+공통 모듈과 플랫폼별 엔진, 세션 저장, SAZ/HAR 표현, 인증서·프록시 복구를 설명합니다. 데스크톱·Android UI 안내 그림과 실제 앱 트래픽 확인 절차도 포함했습니다. 그림은 코드에 근거한 설명용 도식이며 실행 화면 스크린샷이 아닙니다.
+
 ## 먼저 볼 파일
 
 - [`http-capture/README.md`](http-capture/README.md): 실행·빌드 및 플랫폼 범위

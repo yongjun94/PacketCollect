@@ -124,7 +124,7 @@ class DesktopEngine implements CaptureEngine {
     _pending[id] = completer;
     try {
       current.stdin.writeln(jsonEncode({'id': id, 'action': action, ...data}));
-      return await completer.future.timeout(const Duration(seconds: 20));
+      return await completer.future.timeout(const Duration(seconds: 210));
     } finally {
       _pending.remove(id);
     }
@@ -138,7 +138,7 @@ class DesktopEngine implements CaptureEngine {
     final errors=child.stderr.transform(utf8.decoder).join();
     child.stdin.writeln(jsonEncode(data));
     await child.stdin.close();
-    final code=await child.exitCode.timeout(const Duration(seconds:30),onTimeout:(){child.kill();throw TimeoutException('Settings command timed out');});
+    final code=await child.exitCode.timeout(const Duration(seconds:210),onTimeout:(){child.kill();throw TimeoutException('Settings command timed out');});
     final text=await output;
     final stderr=await errors;
     final event=jsonDecode(text.trim().split('\n').last) as Map<String,dynamic>;
@@ -153,7 +153,7 @@ class DesktopEngine implements CaptureEngine {
       '--store',
       storePath,
       '--recover-proxy',
-    ]).timeout(const Duration(seconds: 30));
+    ]).timeout(const Duration(seconds: 210));
     if (result.exitCode != 0) {
       throw StateError('Proxy recovery failed: ${result.stdout}');
     }
@@ -188,3 +188,4 @@ class DesktopEngine implements CaptureEngine {
     await _events.close();
   }
 }
+

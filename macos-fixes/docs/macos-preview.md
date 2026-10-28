@@ -1,17 +1,11 @@
-# Apple Silicon macOS preview
+# macOS automatic system proxy preview
 
-This is a native arm64, direct-distribution development build. The app is ad-hoc signed, not Developer ID signed or notarized. App Sandbox is disabled to support the bundled child process and user-selected local exports. Do not disable Gatekeeper globally; use your organization-approved execution policy.
+Start defaults to connecting enabled network services' HTTP/HTTPS proxies after the listener is ready. macOS administrator approval may be required. Stop and normal app exit restore saved settings before closing the listener. Existing HTTP/HTTPS/SOCKS/PAC/discovery settings are refused; upstream routing is not implemented. Bypass lists remain unchanged.
 
-## Scope
-Common Flutter UI, SQLite/body storage, local HTTP/HTTPS proxy and SAZ/HAR exporters. macOS automatic certificate installation/removal and system proxy changes are NOT implemented. The app clearly labels manual configuration.
+A mode-0600 journal is saved before writes. External changes are not overwritten. After a crash, reopen the app to attempt recovery or use Settings > Restore / recover proxy. Immediate recovery after force kill/power loss is not guaranteed: no privileged background guardian is implemented. Denied approval or a failed restore leaves the journal for retry. Restore original network settings manually if needed.
 
-## Manual acceptance
-1. Open Settings before capture and reveal the public CA certificate. Import only mitmproxy-ca-cert.pem into Keychain Access. Compare SHA-256 fingerprint with the app and explicitly configure SSL trust if approved. Never copy mitmproxy-ca.pem or any private key.
-2. Start capture. Configure the test client's HTTP and HTTPS proxy to 127.0.0.1:8877 (or the configured port). If using macOS network settings, record the original values and restore them before Stop, after a crash, or before closing the app. Automatic recovery is unavailable in this preview. Do not override managed proxy/PAC configuration.
-3. Browse HTTP and HTTPS pages and inspect response bodies. Test redirects, JSON, binary and failed requests.
-4. Restore any manually changed system proxy settings, then stop capture and export HAR and SAZ. Import HAR in Chrome DevTools on Mac and transfer SAZ to Windows for Fiddler Classic import.
-5. Remove only this installation's CA in Keychain Access after testing; identify it by fingerprint, not just its generic name.
+CA trust still requires explicit user action in Keychain Access. Only import the public mitmproxy-ca-cert.pem after fingerprint verification. Never share mitmproxy-ca.pem, which includes the private key.
 
-Native engine smoke tests do not modify Keychain or system proxy. A successful build does not prove GUI, Safari/Chrome trust or importer compatibility on a real Mac.
+Scope is proxy-aware HTTP/HTTPS, not every packet. Arbitrary TCP/UDP, QUIC, bypassed hosts, apps ignoring system proxies and pinned TLS are not guaranteed. Windows also uses an HTTP proxy.
 
-Windows acceptance: user reported normal Windows operation and confirmed Fiddler and DevTools import on 2026-10-26. macOS manual acceptance remains pending.
+Four mocked tests pass for round-trip, existing corporate route refusal, external conflict and partial-write recovery. Real networksetup writes, authorization dialogs, browser HTTPS and crash recovery remain pending real Mac acceptance. The user's curl capture proves the prior HTTP engine path only. The app remains ad-hoc signed and not notarized.

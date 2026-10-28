@@ -42,7 +42,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
       decrypt = true,
       dirty = false;
   String filter = '', status = 'Stopped', fingerprint = '', caPath = '';
-  bool routeSystemTraffic=false;
+  bool routeSystemTraffic=Platform.isMacOS;
   int port = 8877, total = 0;
   CaptureSession? selected;
   final pages = <int, List<CaptureSession>>{};
@@ -337,9 +337,9 @@ class _CaptureScreenState extends State<CaptureScreen> {
                   ),
                   const Divider(),
                   if (Platform.isMacOS)
-                    Text('macOS preview: configure your browser proxy manually to 127.0.0.1:$port while capture is running. If changing macOS network proxy settings, record existing values and restore them BEFORE stopping capture. This build does not change or restore macOS system proxy settings.'),
-                  if (!Platform.isMacOS) ...[
-                  const Text('Windows current-user WinINet proxy'),
+                    Text('macOS: Start connects system HTTP/HTTPS proxies after administrator approval. Stop restores previous settings. Existing proxies/PAC are rejected. After a crash, reopen this app to recover. Apps that ignore system proxies are not captured.'),
+                  ...[
+                  Text(Platform.isMacOS ? 'macOS system HTTP/HTTPS proxy' : 'Windows current-user WinINet proxy'),
                   SwitchListTile(title:const Text('Use system proxy when capture starts'),subtitle:const Text('Can be configured while stopped. Applied after the listener starts and restored on Stop.'),value:routeSystemTraffic,onChanged:running?null:(v){setState(()=>routeSystemTraffic=v);update((){});}),
                   const Text(
                     'Use manual proxy configuration for WinHTTP, PAC or managed clients.',
@@ -349,7 +349,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       TextButton(
                         onPressed: () async {
                                 if (await confirm(
-                                  'Apply 127.0.0.1:$port as the current-user Windows proxy until capture stops?',
+                                  'Apply 127.0.0.1:$port as the system HTTP/HTTPS proxy until capture stops?',
                                 )) {
                                   try {
                                     if(!running)throw StateError('Start capture before enabling the system proxy.');
@@ -381,7 +381,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                     'Remote capture: unavailable in this MVP. Listener is loopback only.',
                   ),
                   const Text(
-                    'macOS automatic trust/proxy adapters and Android/iOS engines: pending.',
+                    'macOS CA trust remains manual. This is an HTTP/HTTPS proxy, not a packet sniffer.',
                   ),
                   const SizedBox(height: 12),
                   SelectableText('Local storage: ${widget.storePath}'),
@@ -699,3 +699,4 @@ class _CaptureScreenState extends State<CaptureScreen> {
     }
   }
 }
+

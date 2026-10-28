@@ -31,6 +31,8 @@ jobs:
           flutter-version: '3.35.5'
           architecture: arm64
           cache: true
+      - name: Test proxy safety without changing runner settings
+        run: python -m unittest discover -s http-capture/tests/unit -p test_macos_proxy.py -v
       - name: Build, test and package native app
         working-directory: http-capture
         run: python scripts/build_desktop.py macos

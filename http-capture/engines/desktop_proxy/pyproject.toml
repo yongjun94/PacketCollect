@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "http-capture-proxy"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["mitmproxy==12.3.0"]
+[project.scripts]
+http-capture-proxy = "capture_proxy.main:main"
+[tool.setuptools.packages.find]
+where = ["src"]

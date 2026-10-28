@@ -18,17 +18,6 @@ jobs:
       PYTHONUTF8: '1'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Extract project source
-        shell: pwsh
-        run: |
-          Expand-Archive -LiteralPath HTTP-Capture-Source.zip -DestinationPath .
-          Copy-Item -LiteralPath fixes/apps/capture_app/lib/app.dart -Destination http-capture/apps/capture_app/lib/app.dart
-          Copy-Item -LiteralPath fixes/apps/capture_app/lib/platform/desktop_engine.dart -Destination http-capture/apps/capture_app/lib/platform/desktop_engine.dart
-          Copy-Item -LiteralPath fixes/engines/desktop_proxy/src/capture_proxy/main.py -Destination http-capture/engines/desktop_proxy/src/capture_proxy/main.py
-          Copy-Item -LiteralPath fixes/engines/desktop_proxy/src/capture_proxy/windows_adapter.py -Destination http-capture/engines/desktop_proxy/src/capture_proxy/windows_adapter.py
-          Copy-Item -LiteralPath fixes/tests/unit/test_proxy_safety.py -Destination http-capture/tests/unit/test_proxy_safety.py
-          Copy-Item -LiteralPath fixes/scripts/smoke_packaged.py -Destination http-capture/scripts/smoke_packaged.py
-          Copy-Item -LiteralPath build_desktop.py -Destination http-capture/scripts/build_desktop.py
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
@@ -37,11 +26,9 @@ jobs:
           channel: stable
           flutter-version: '3.35.5'
           cache: true
-      - name: Test source assembly and enterprise proxy guard
+      - name: Test enterprise proxy guard
         shell: pwsh
-        run: |
-          python -m unittest discover -s tests -p test_materialize.py -v
-          python fixes/tests/unit/test_proxy_safety.py -v
+        run: python http-capture/tests/unit/test_proxy_safety.py -v
       - name: Build, test and package Windows x64
         shell: pwsh
         working-directory: http-capture

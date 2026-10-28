@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['android-fixes/**', 'android-native/**', '.github/workflows/android-build.yml']
+    paths: ['http-capture/**', '.github/workflows/android-build.yml']
 permissions:
   contents: read
 jobs:
@@ -23,23 +23,10 @@ jobs:
           flutter-version: '3.35.5'
           channel: stable
           cache: true
-      - name: Prepare complete project and Android runner
-        run: |
-          unzip -q HTTP-Capture-Source.zip
-          cp -R fixes/. http-capture/
-          cd http-capture/apps/capture_app
-          flutter create --platforms android --org dev.httpcapture --project-name capture_app --no-pub .
-          cd ../../..
-          cp -R android-fixes/. http-capture/
-          cp android-native/AndroidManifest.xml http-capture/apps/capture_app/android/app/src/main/AndroidManifest.xml
-          cp android-native/*.kt http-capture/apps/capture_app/android/app/src/main/kotlin/dev/httpcapture/capture_app/
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('http-capture/apps/capture_app/android/app/build.gradle.kts')
-          s=p.read_text().replace('minSdk = flutter.minSdkVersion','minSdk = 29').replace('applicationId = "dev.httpcapture.capture_app"','applicationId = "dev.httpcapture.capture_app.all"')
-          s += '\ndependencies { implementation("org.bouncycastle:bcpkix-jdk15to18:1.86") }\n'
-          p.write_text(s)
-          PY
+      - name: Check Android scaffold does not overwrite reviewed source
+        run: python3 http-capture/tests/unit/test_android_scaffold.py -v
+      - name: Generate Android runner from reviewed native sources
+        run: python3 http-capture/scripts/prepare_android.py
       - name: Analyze and run HTTP proxy integration tests
         working-directory: http-capture/apps/capture_app
         run: |
@@ -63,10 +50,10 @@ jobs:
           rm -rf "$HOME/.gradle/caches" http-capture/apps/capture_app/build/app/intermediates
           export PATH="$ANDROID_HOME/platform-tools:$PATH"
           sudo chmod 666 /dev/kvm
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "system-images;android-35;google_apis;x86_64" "emulator"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "system-images;android-35;default;x86_64" "emulator"
           export ANDROID_AVD_HOME="$RUNNER_TEMP/capture-avd"
           mkdir -p "$ANDROID_AVD_HOME"
-          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --force --name capture-test --device pixel_6 --path "$ANDROID_AVD_HOME/capture-test.avd" --package "system-images;android-35;google_apis;x86_64"
+          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --force --name capture-test --device pixel_6 --path "$ANDROID_AVD_HOME/capture-test.avd" --package "system-images;android-35;default;x86_64"
           test -f "$ANDROID_AVD_HOME/capture-test.avd/config.ini"
           printf 'avd.ini.encoding=UTF-8\npath=%s\n' "$ANDROID_AVD_HOME/capture-test.avd" > "$ANDROID_AVD_HOME/capture-test.ini"
           "$ANDROID_HOME/emulator/emulator" -avd capture-test -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot > emulator.log 2>&1 &
@@ -76,7 +63,7 @@ jobs:
             sleep 2
           done
           adb shell input keyevent 82
-          python3 android-scripts/android_device_smoke.py
+          python3 http-capture/scripts/android_device_smoke.py
       - name: Device diagnostics
         if: always()
         run: timeout 10 "$ANDROID_HOME/platform-tools/adb" logcat -d > android-logcat.txt || true

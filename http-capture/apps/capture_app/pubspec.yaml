@@ -1,0 +1,22 @@
+name: capture_app
+description: Local HTTP capture desktop application.
+publish_to: none
+version: 0.1.0+1
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  capture_core:
+    path: ../../packages/capture_core
+  capture_export:
+    path: ../../packages/capture_export
+  path: 1.9.1
+  path_provider: 2.1.5
+  file_selector: 1.0.3
+  sqlite3_flutter_libs: 0.5.39
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+flutter:
+  uses-material-design: true

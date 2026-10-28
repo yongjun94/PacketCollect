@@ -2,9 +2,11 @@ name: Android device smoke
 # Uses the default Android image to avoid unrelated Google service ANRs.
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths: ['.github/workflows/android-device-test.yml']
+    inputs:
+      build_run_id:
+        description: Successful Android build run ID for the APK to test
+        required: true
+        type: string
 permissions:
   contents: read
   actions: read
@@ -34,7 +36,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: HTTP-Capture-Android-preview
-          run-id: 40441692889
+          run-id: ${{ inputs.build_run_id }}
           github-token: ${{ github.token }}
           path: http-capture/apps/capture_app/build/app/outputs/flutter-apk
       - name: Exercise APK on Android
@@ -49,7 +51,7 @@ jobs:
           adb shell settings put global transition_animation_scale 0
           adb shell settings put global animator_duration_scale 0
           adb shell input keyevent 82
-          python3 android-scripts/android_device_smoke.py
+          python3 http-capture/scripts/android_device_smoke.py
       - name: Capture diagnostic logs
         if: always()
         run: timeout 10 "$ANDROID_HOME/platform-tools/adb" logcat -d > android-logcat.txt || true

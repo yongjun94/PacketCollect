@@ -1,0 +1,17 @@
+**/.dart_tool/
+**/build/
+**/.flutter-plugins-dependencies
+**/__pycache__/
+**/.pytest_cache/
+.build/
+dist/
+*.partial
+*.sqlite*
+*.pem
+*.p12
+*.key
+
+artifacts/
+apps/capture_app/android/
+!apps/capture_app/test/tls/*.pem
+!apps/capture_app/test/tls/*.key

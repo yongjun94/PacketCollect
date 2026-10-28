@@ -1,0 +1,849 @@
+[
+  {
+    "ecosystem": "pypi",
+    "name": "aioquic",
+    "version": "1.2.0",
+    "licenseMetadata": "BSD-3-Clause",
+    "notices": [
+      "texts/aioquic/aioquic-1.2.0.dist-info/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "argon2-cffi",
+    "version": "25.1.0",
+    "licenseMetadata": "MIT",
+    "notices": [
+      "texts/argon2-cffi/argon2_cffi-25.1.0.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "argon2-cffi-bindings",
+    "version": "26.1.0",
+    "licenseMetadata": "MIT",
+    "notices": [
+      "texts/argon2-cffi-bindings/argon2_cffi_bindings-26.1.0.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "asgiref",
+    "version": "3.12.1",
+    "licenseMetadata": "BSD-3-Clause",
+    "notices": [
+      "texts/asgiref/asgiref-3.12.1.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "attrs",
+    "version": "26.1.0",
+    "licenseMetadata": "MIT",
+    "notices": [
+      "texts/attrs/attrs-26.1.0.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "backports.zstd",
+    "version": "1.7.0",
+    "licenseMetadata": "PSF-2.0",
+    "notices": [
+      "texts/backports.zstd/backports_zstd-1.7.0.dist-info/licenses/LICENSE.txt",
+      "texts/backports.zstd/backports_zstd-1.7.0.dist-info/licenses/LICENSE_zstd.txt"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "bcrypt",
+    "version": "5.0.0",
+    "licenseMetadata": "Apache-2.0",
+    "notices": [
+      "texts/bcrypt/bcrypt-5.0.0.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "blinker",
+    "version": "1.9.0",
+    "licenseMetadata": "UNRESOLVED",
+    "notices": [
+      "texts/blinker/blinker-1.9.0.dist-info/LICENSE.txt"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "brotli",
+    "version": "1.2.0",
+    "licenseMetadata": "MIT",
+    "notices": [
+      "texts/brotli/brotli-1.2.0.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "certifi",
+    "version": "2026.10.23",
+    "licenseMetadata": "MPL-2.0",
+    "notices": [
+      "texts/certifi/certifi-2026.10.23.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "cffi",
+    "version": "2.1.1",
+    "licenseMetadata": "MIT-0",
+    "notices": [
+      "texts/cffi/cffi-2.1.1.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "click",
+    "version": "8.5.0",
+    "licenseMetadata": "BSD-3-Clause",
+    "notices": [
+      "texts/click/click-8.5.0.dist-info/licenses/LICENSE.txt"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "cryptography",
+    "version": "50.0.2",
+    "licenseMetadata": "Apache-2.0 OR BSD-3-Clause",
+    "notices": [
+      "texts/cryptography/cryptography-50.0.2.dist-info/licenses/LICENSE",
+      "texts/cryptography/cryptography-50.0.2.dist-info/licenses/LICENSE.APACHE",
+      "texts/cryptography/cryptography-50.0.2.dist-info/licenses/LICENSE.BSD"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "Flask",
+    "version": "3.1.3",
+    "licenseMetadata": "BSD-3-Clause",
+    "notices": [
+      "texts/Flask/flask-3.1.3.dist-info/licenses/LICENSE.txt"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "h11",
+    "version": "0.16.0",
+    "licenseMetadata": "MIT",
+    "notices": [
+      "texts/h11/h11-0.16.0.dist-info/licenses/LICENSE.txt"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "h2",
+    "version": "4.4.1",
+    "licenseMetadata": "MIT",
+    "notices": [
+      "texts/h2/h2-4.4.1.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "hpack",
+    "version": "4.2.0",
+    "licenseMetadata": "MIT",
+    "notices": [
+      "texts/hpack/hpack-4.2.0.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "hyperframe",
+    "version": "6.1.0",
+    "licenseMetadata": "The MIT License (MIT)\n\nCopyright (c) 2014 Cory Benfield\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\nTHE SOFTWARE.\n",
+    "notices": [
+      "texts/hyperframe/hyperframe-6.1.0.dist-info/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "itsdangerous",
+    "version": "2.2.0",
+    "licenseMetadata": "UNRESOLVED",
+    "notices": [
+      "texts/itsdangerous/itsdangerous-2.2.0.dist-info/LICENSE.txt"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "Jinja2",
+    "version": "3.1.6",
+    "licenseMetadata": "UNRESOLVED",
+    "notices": [
+      "texts/Jinja2/jinja2-3.1.6.dist-info/licenses/LICENSE.txt"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "kaitaistruct",
+    "version": "0.11",
+    "licenseMetadata": "MIT",
+    "notices": [
+      "texts/kaitaistruct/kaitaistruct-0.11.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "ldap3",
+    "version": "2.9.1",
+    "licenseMetadata": "LGPL v3",
+    "notices": [
+      "texts/ldap3/ldap3-2.9.1.dist-info/COPYING.LESSER.txt",
+      "texts/ldap3/ldap3-2.9.1.dist-info/COPYING.txt",
+      "texts/ldap3/ldap3-2.9.1.dist-info/LICENSE.txt"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "MarkupSafe",
+    "version": "3.0.4",
+    "licenseMetadata": "BSD-3-Clause",
+    "notices": [
+      "texts/MarkupSafe/markupsafe-3.0.4.dist-info/licenses/LICENSE.txt"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "mitmproxy",
+    "version": "12.3.0",
+    "licenseMetadata": "Copyright (c) 2013, Aldo Cortesi. All rights reserved.\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
+    "notices": [
+      "texts/mitmproxy/mitmproxy-12.3.0.dist-info/LICENSE",
+      "texts/mitmproxy/mitmproxy/contrib/click/LICENSE.BSD-3",
+      "texts/mitmproxy/mitmproxy/contrib/kaitaistruct/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "mitmproxy_linux",
+    "version": "0.12.15",
+    "licenseMetadata": "UNRESOLVED",
+    "notices": [
+      "texts/mitmproxy_linux/mitmproxy_linux-0.12.15.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "mitmproxy_rs",
+    "version": "0.12.15",
+    "licenseMetadata": "UNRESOLVED",
+    "notices": [
+      "texts/mitmproxy_rs/mitmproxy_rs-0.12.15.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "publicsuffix2",
+    "version": "2.20191221",
+    "licenseMetadata": "MIT and MPL-2.0",
+    "notices": []
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "pyasn1",
+    "version": "0.6.4",
+    "licenseMetadata": "BSD-2-Clause",
+    "notices": [
+      "texts/pyasn1/pyasn1-0.6.4.dist-info/licenses/LICENSE.rst"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "pycparser",
+    "version": "3.12",
+    "licenseMetadata": "BSD-3-Clause",
+    "notices": [
+      "texts/pycparser/pycparser-3.12.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "pylsqpack",
+    "version": "0.3.24",
+    "licenseMetadata": "BSD-3-Clause",
+    "notices": [
+      "texts/pylsqpack/pylsqpack-0.3.24.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "pyOpenSSL",
+    "version": "26.4.0",
+    "licenseMetadata": "Apache License, Version 2.0",
+    "notices": [
+      "texts/pyOpenSSL/pyopenssl-26.4.0.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "pyparsing",
+    "version": "3.3.3",
+    "licenseMetadata": "MIT",
+    "notices": [
+      "texts/pyparsing/pyparsing-3.3.3.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "pyperclip",
+    "version": "1.11.0",
+    "licenseMetadata": "BSD",
+    "notices": [
+      "texts/pyperclip/pyperclip-1.11.0.dist-info/licenses/LICENSE.txt"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "ruamel.yaml",
+    "version": "0.19.1",
+    "licenseMetadata": "MIT",
+    "notices": [
+      "texts/ruamel.yaml/ruamel_yaml-0.19.1.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "service-identity",
+    "version": "26.1.0",
+    "licenseMetadata": "MIT",
+    "notices": [
+      "texts/service-identity/service_identity-26.1.0.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "sortedcontainers",
+    "version": "2.4.0",
+    "licenseMetadata": "Apache 2.0",
+    "notices": [
+      "texts/sortedcontainers/sortedcontainers-2.4.0.dist-info/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "tornado",
+    "version": "6.5.10",
+    "licenseMetadata": "Apache-2.0",
+    "notices": [
+      "texts/tornado/tornado-6.5.10.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "typing_extensions",
+    "version": "4.16.0",
+    "licenseMetadata": "PSF-2.0",
+    "notices": [
+      "texts/typing_extensions/typing_extensions-4.16.0.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "urwid",
+    "version": "4.0.13",
+    "licenseMetadata": "LGPL-2.1-only",
+    "notices": [
+      "texts/urwid/urwid-4.0.13.dist-info/licenses/COPYING"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "wcwidth",
+    "version": "0.9.4",
+    "licenseMetadata": "UNRESOLVED",
+    "notices": [
+      "texts/wcwidth/wcwidth-0.9.4.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "Werkzeug",
+    "version": "3.1.9",
+    "licenseMetadata": "BSD-3-Clause",
+    "notices": [
+      "texts/Werkzeug/werkzeug-3.1.9.dist-info/licenses/LICENSE.txt"
+    ]
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "wsproto",
+    "version": "1.3.2",
+    "licenseMetadata": "MIT",
+    "notices": [
+      "texts/wsproto/wsproto-1.3.2.dist-info/licenses/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "async",
+    "version": "2.13.1",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/async/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "boolean_selector",
+    "version": "2.1.2",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/boolean_selector/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "characters",
+    "version": "1.4.0",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/characters/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "clock",
+    "version": "1.1.2",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/clock/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "collection",
+    "version": "1.19.1",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/collection/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "cross_file",
+    "version": "0.3.5+2",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/cross_file/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "fake_async",
+    "version": "1.3.3",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/fake_async/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "ffi",
+    "version": "2.2.0",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/ffi/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "file_selector",
+    "version": "1.0.3",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/file_selector/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "file_selector_android",
+    "version": "0.5.2+6",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/file_selector_android/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "file_selector_ios",
+    "version": "0.5.3+4",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/file_selector_ios/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "file_selector_linux",
+    "version": "0.9.4",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/file_selector_linux/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "file_selector_macos",
+    "version": "0.9.5",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/file_selector_macos/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "file_selector_platform_interface",
+    "version": "2.7.0",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/file_selector_platform_interface/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "file_selector_web",
+    "version": "0.9.4+2",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/file_selector_web/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "file_selector_windows",
+    "version": "0.9.3+5",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/file_selector_windows/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "flutter",
+    "version": "SDK",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/flutter/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "flutter_test",
+    "version": "SDK",
+    "licenseMetadata": "UNRESOLVED",
+    "notices": []
+  },
+  {
+    "ecosystem": "pub",
+    "name": "flutter_web_plugins",
+    "version": "SDK",
+    "licenseMetadata": "UNRESOLVED",
+    "notices": []
+  },
+  {
+    "ecosystem": "pub",
+    "name": "http",
+    "version": "1.6.0",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/http/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "http_parser",
+    "version": "4.1.2",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/http_parser/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "leak_tracker",
+    "version": "11.0.2",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/leak_tracker/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "leak_tracker_flutter_testing",
+    "version": "3.0.10",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/leak_tracker_flutter_testing/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "leak_tracker_testing",
+    "version": "3.0.2",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/leak_tracker_testing/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "matcher",
+    "version": "0.12.17",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/matcher/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "material_color_utilities",
+    "version": "0.11.1",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/material_color_utilities/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "meta",
+    "version": "1.16.0",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/meta/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "path",
+    "version": "1.9.1",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/path/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "path_provider",
+    "version": "2.1.5",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/path_provider/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "path_provider_android",
+    "version": "2.2.23",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/path_provider_android/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "path_provider_foundation",
+    "version": "2.5.1",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/path_provider_foundation/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "path_provider_linux",
+    "version": "2.2.1",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/path_provider_linux/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "path_provider_platform_interface",
+    "version": "2.1.2",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/path_provider_platform_interface/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "path_provider_windows",
+    "version": "2.3.0",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/path_provider_windows/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "petitparser",
+    "version": "7.0.2",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/petitparser/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "platform",
+    "version": "3.1.6",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/platform/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "plugin_platform_interface",
+    "version": "2.1.8",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/plugin_platform_interface/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "sky_engine",
+    "version": "SDK",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/sky_engine/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "source_span",
+    "version": "1.10.2",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/source_span/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "sqlite3",
+    "version": "2.9.4",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/sqlite3/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "sqlite3_flutter_libs",
+    "version": "0.5.39",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/sqlite3_flutter_libs/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "stack_trace",
+    "version": "1.12.1",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/stack_trace/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "stream_channel",
+    "version": "2.1.4",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/stream_channel/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "string_scanner",
+    "version": "1.4.1",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/string_scanner/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "term_glyph",
+    "version": "1.2.2",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/term_glyph/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "test_api",
+    "version": "0.7.6",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/test_api/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "typed_data",
+    "version": "1.4.0",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/typed_data/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "vector_math",
+    "version": "2.2.0",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/vector_math/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "vm_service",
+    "version": "15.4.0",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/vm_service/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "web",
+    "version": "1.1.1",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/web/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "xdg_directories",
+    "version": "1.1.0",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/xdg_directories/LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "pub",
+    "name": "xml",
+    "version": "6.6.1",
+    "licenseMetadata": "See full text",
+    "notices": [
+      "texts/dart/xml/LICENSE"
+    ]
+  }
+]

@@ -1,0 +1,12 @@
+name: capture_export
+version: 0.1.0
+publish_to: none
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+dependencies:
+  capture_core:
+    path: ../capture_core
+  path: 1.9.1
+  xml: 6.6.1
+dev_dependencies:
+  test: 1.26.3

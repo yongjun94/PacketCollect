@@ -1,0 +1,10 @@
+name: capture_core
+version: 0.1.0
+publish_to: none
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+dependencies:
+  sqlite3: 2.9.4
+  path: 1.9.1
+dev_dependencies:
+  test: 1.26.3

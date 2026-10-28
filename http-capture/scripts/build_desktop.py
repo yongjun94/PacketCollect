@@ -101,7 +101,7 @@ def main():
         output = ROOT / 'dist/HTTP-Capture.app'
     test_env = dict(os.environ)
     test_env['PATH'] = str(source) + os.pathsep + test_env.get('PATH', '')
-    run(flutter, 'test', '--reporter', 'expanded', cwd=app, env=test_env)
+    run(flutter, 'test', 'test/desktop', '--reporter', 'expanded', cwd=app, env=test_env)
     for package in ('capture_core', 'capture_export'):
         cwd = ROOT / 'packages' / package
         run(flutter, 'pub', 'get', '--enforce-lockfile', cwd=cwd, env=test_env)

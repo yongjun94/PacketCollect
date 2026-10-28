@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:capture_app/platform/local_proxy_engine.dart';
 
 SecurityContext identity() => SecurityContext()
-  ..useCertificateChain('test/tls/leaf.pem')..usePrivateKey('test/tls/leaf.key');
-SecurityContext trust() => SecurityContext(withTrustedRoots:false)..setTrustedCertificates('test/tls/ca.pem');
+  ..useCertificateChain('test/android/tls/leaf.pem')..usePrivateKey('test/android/tls/leaf.key');
+SecurityContext trust() => SecurityContext(withTrustedRoots:false)..setTrustedCertificates('test/android/tls/ca.pem');
 void main() {
   for(final mode in ['decrypt', 'decrypt-all', 'upstream-rejected', 'client-rejected', 'tunnel']) {
     test('HTTPS $mode uses actual TLS sockets', () async {

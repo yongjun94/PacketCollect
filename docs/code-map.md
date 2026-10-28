@@ -39,3 +39,7 @@ Android runner는 고정 Flutter SDK로 생성하며 Dart 소스를 덮어쓰지
 기존 버전: Windows 사용자 캡처/Fiddler/DevTools 확인, Mac 사용자 HAR에서 Safari HTTPS 200/HTML 확인, Android API35 에뮬레이터 확인. 구조 변경 후에는 새 CI 결과가 기준입니다. 빌드 성공과 OS 설정 변경·실제 브라우저 동작 확인을 구분합니다. 기업 PAC/upstream, 인증서 고정, 모든 앱/패킷 수집, 배포 서명·공증은 완료로 취급하지 않습니다.
 
 `http-capture/docs` 안의 초기 설계·이전 테스트 보고서는 역사적 문서입니다. 현재 구현 위치는 이 문서와 실제 소스/CI를 우선합니다.
+
+### 테스트 실행 범위
+
+데스크톱 UI·IPC는 `apps/capture_app/test/desktop`, Android UI·Dart HTTP/TLS 엔진은 `test/android`에 있습니다. 데스크톱 빌드는 `flutter test test/desktop`, Android Linux CI는 `flutter test test/android test/desktop`을 실행합니다. Android용 Dart TLS fixture는 Mac의 네이티브 신뢰 검증 차이로 실패했으며 Mac 엔진 지원으로 간주하지 않습니다. Mac의 실제 Python/mitmproxy 엔진은 별도 packaged smoke와 실기기 검증 대상입니다. 테스트 자체를 삭제하거나 TLS 검증을 완화하지 않습니다.

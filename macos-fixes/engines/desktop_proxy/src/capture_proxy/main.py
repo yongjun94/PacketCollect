@@ -13,6 +13,7 @@ from .event_writer import EventWriter
 from .proxy_addon import CaptureAddon
 from .windows_adapter import WindowsProxy, certificate_action
 from .macos_adapter import MacProxy
+from .macos_certificate import MacCertificate
 
 ProxyAdapter = MacProxy if sys.platform == "darwin" else WindowsProxy
 
@@ -33,6 +34,8 @@ def settings_action(root, action, consent=False):
     ca = x509.load_pem_x509_certificate(path.read_bytes())
     if action == 'certificate_info':
         return {'path': str(path), 'fingerprint': ca.fingerprint(hashes.SHA256()).hex().upper()}
+    if sys.platform == 'darwin':
+        return MacCertificate(path).action(action.removeprefix('certificate_'), consent)
     return certificate_action(path, action.removeprefix('certificate_'))
 
 
@@ -103,7 +106,7 @@ async def run(root, port, decrypt):
                 elif action in ('certificate_info', 'certificate_install', 'certificate_remove', 'certificate_status'):
                     if action in ('certificate_install','certificate_remove') and cmd.get('consent') is not True:
                         raise ValueError('Explicit user consent required')
-                    result = settings_action(root, action, cmd.get('consent', False))
+                    result = await asyncio.to_thread(settings_action, root, action, cmd.get('consent', False))
                 else:
                     raise ValueError('Unknown action')
                 writer.emit('ack', id=command_id, result=result)
@@ -155,4 +158,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 

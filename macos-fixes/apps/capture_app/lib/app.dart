@@ -168,6 +168,14 @@ class _CaptureScreenState extends State<CaptureScreen> {
   }
 
   Future<void> start() async {
+    if (Platform.isMacOS && decrypt) {
+      var ca = await engine.settingsCommand('certificate_status');
+      if (ca['trusted'] != true) {
+        if (!await confirm('HTTPS 캡처에는 이 설치본의 Root CA에 대한 SSL 신뢰가 필요합니다. 현재 사용자 키체인에 설치하고 신뢰하시겠습니까? macOS 승인이 표시될 수 있습니다. SHA-256: ${ca['fingerprint']}')) return;
+        ca = await engine.settingsCommand('certificate_install', {'consent': true});
+        if (ca['trusted'] != true) throw StateError('CA SSL trust verification failed');
+      }
+    }
     await engine.start(port: port, decrypt: decrypt);
     if(routeSystemTraffic){try{await engine.command('proxy_enable');}catch(_){await engine.stop();rethrow;}}
     setState(() {
@@ -273,7 +281,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                   ),
                   SelectableText(caPath),
                   if (Platform.isMacOS) ...[
-                    const Text('macOS preview: CA trust is configured manually in Keychain Access. Import only the public certificate above, verify its SHA-256 fingerprint, then explicitly trust it for SSL. Never share mitmproxy-ca.pem (private key).'),
+                    const Text('macOS: 아래 CA 설치 및 SSL 신뢰 버튼을 사용하세요. 현재 사용자 키체인에 공개 CA만 설치합니다. macOS 승인 절차가 표시될 수 있습니다. 개인키는 전송하지 않습니다.'),
                     TextButton(onPressed: () async {
                       try {
                         final result = await Process.run('/usr/bin/open', ['-R', caPath]);
@@ -281,7 +289,6 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       } catch(e) { await notice('$e'); }
                     }, child: const Text('Show public CA in Finder')),
                   ],
-                  if (!Platform.isMacOS)
                   Wrap(
                     spacing: 8,
                     children: [
@@ -296,25 +303,25 @@ class _CaptureScreenState extends State<CaptureScreen> {
                                   await notice('$e');
                                 }
                               },
-                        child: const Text('Check trust'),
+                        child: const Text('CA 신뢰 상태 확인'),
                       ),
                       TextButton(
                         onPressed: () async {
                                 if (await confirm(
-                                  'Trust this installation’s Root CA in Current User Root? This allows this proxy to decrypt HTTPS when clients use it.',
+                                  '이 설치본의 Root CA를 설치하고 HTTPS용으로 신뢰하시겠습니까? 프록시를 통과하는 HTTPS 내용을 복호화할 수 있게 됩니다. macOS에서는 현재 사용자 SSL 신뢰를 설정합니다.',
                                 )) {
                                   try {
-                                    await engine.settingsCommand(
+                                    final installed = await engine.settingsCommand(
                                       'certificate_install',
                                       {'consent': true},
                                     );
-                                    await notice('Certificate installed.');
+                                    await notice(installed['trusted'] == true ? 'CA 설치 및 신뢰 확인 완료. Safari를 다시 열고 재시도하세요.' : '설치 후 신뢰를 확인하지 못했습니다. 키체인 설정을 확인하세요.');
                                   } catch (e) {
                                     await notice('$e');
                                   }
                                 }
                               },
-                        child: const Text('Install CA'),
+                        child: const Text('CA 설치 및 SSL 신뢰'),
                       ),
                       TextButton(
                         onPressed: () async {
@@ -331,7 +338,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                                   }
                                 }
                               },
-                        child: const Text('Remove CA'),
+                        child: const Text('앱이 설치한 CA 삭제'),
                       ),
                     ],
                   ),
@@ -381,7 +388,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                     'Remote capture: unavailable in this MVP. Listener is loopback only.',
                   ),
                   const Text(
-                    'macOS CA trust remains manual. This is an HTTP/HTTPS proxy, not a packet sniffer.',
+                    'macOS CA trust requires explicit approval. This is an HTTP/HTTPS proxy, not a packet sniffer.',
                   ),
                   const SizedBox(height: 12),
                   SelectableText('Local storage: ${widget.storePath}'),
@@ -699,4 +706,5 @@ class _CaptureScreenState extends State<CaptureScreen> {
     }
   }
 }
+
 

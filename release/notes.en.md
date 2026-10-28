@@ -10,6 +10,16 @@ HTTP Capture is a local HTTP/HTTPS capture tool with SAZ and HAR export. Downloa
 
 End users do not need Python or the Flutter SDK. See **INSTALL.en.md** for HTTPS CA setup, installation details and Android update precautions.
 
+### Why HTTP Capture was created
+
+HTTP Capture was started as an **independent response to changes in Fiddler Classic's business/commercial-use licensing and the requirement for affected users to move to the paid commercial offering, Fiddler Everywhere**. The goal is a local tool focused on HTTP/HTTPS collection and SAZ/HAR export for workplace troubleshooting and customer support.
+
+More precisely, Fiddler Classic did not become a paid product for every user. Progress announced the change on August 3, 2026, with a September 17, 2026 transition deadline for commercial users. Classic remains free for non-commercial use; business/commercial users are directed to Fiddler Everywhere under a commercial license. [Official transition notice](https://www.telerik.com/fiddler/fiddler-classic/commercial-use) · [Official EULA](https://www.telerik.com/purchase/license-agreement/fiddler-enterprise-support)
+
+HTTP Capture is not an official Progress/Telerik product, fork or affiliated project. SAZ support is independently implemented. This motivation does not imply bypassing Fiddler licensing or feature parity with the Fiddler product family.
+
+**개발 배경 요약:** Fiddler Classic의 업무·상업적 이용 정책 변경과 유료 Fiddler Everywhere 전환 요구에 대응해, 회사 업무용 HTTP/HTTPS 캡처 및 SAZ/HAR 내보내기 도구를 독립적으로 개발하기 시작했습니다. 비상업적 Classic 사용은 계속 무료라는 점을 구분합니다.
+
 ### Preview status and signing
 
 This is a development preview. Windows has no distribution code signature. The Mac app is ad-hoc signed, without Developer ID signing or Apple notarization. Android uses a debug signing key; an existing APK signed with a different key cannot be updated in place. Back up captured data before considering removal of an older app. Follow your organization's execution and installation policies.

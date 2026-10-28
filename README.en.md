@@ -6,6 +6,14 @@
 
 [Download apps](https://github.com/yongjun94/PacketCollect/releases/tag/v0.1.0-preview.20261028) · [Architecture & UI guide](docs/architecture.en.md) · [Installation](release/INSTALL.en.md) · [한국어 구조 안내](docs/architecture.ko.md)
 
+## Why this project exists
+
+HTTP Capture was started as an **independent response to changes in Fiddler Classic's business/commercial-use licensing and the requirement for affected users to move to the paid commercial offering, Fiddler Everywhere**. The goal is a local tool focused on HTTP/HTTPS collection and SAZ/HAR export for workplace troubleshooting and customer support.
+
+More precisely, Fiddler Classic did not become a paid product for every user. Progress announced the change on August 3, 2026, with a September 17, 2026 transition deadline for commercial users. Classic remains free for non-commercial use; business/commercial users are directed to Fiddler Everywhere under a commercial license. [Official transition notice](https://www.telerik.com/fiddler/fiddler-classic/commercial-use) · [Official EULA](https://www.telerik.com/purchase/license-agreement/fiddler-enterprise-support)
+
+HTTP Capture is not an official Progress/Telerik product, fork or affiliated project. SAZ support is independently implemented. This motivation does not imply bypassing Fiddler licensing or feature parity with the Fiddler product family.
+
 ## Downloads and first use
 
 | Platform | Package | First steps |

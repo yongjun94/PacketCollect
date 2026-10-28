@@ -4,6 +4,14 @@
 
 This guide describes the implemented preview, including its limitations. It is not a promise that every item in the original product roadmap is complete. The diagrams are documentation schematics based on the source, not screenshots of a running app. Example sessions and sizes are synthetic.
 
+## Project background: the Fiddler Classic commercial-use transition
+
+HTTP Capture was started as an **independent response to changes in Fiddler Classic's business/commercial-use licensing and the requirement for affected users to move to the paid commercial offering, Fiddler Everywhere**. The goal is a local tool focused on HTTP/HTTPS collection and SAZ/HAR export for workplace troubleshooting and customer support.
+
+More precisely, Fiddler Classic did not become a paid product for every user. Progress announced the change on August 3, 2026, with a September 17, 2026 transition deadline for commercial users. Classic remains free for non-commercial use; business/commercial users are directed to Fiddler Everywhere under a commercial license. [Official transition notice](https://www.telerik.com/fiddler/fiddler-classic/commercial-use) · [Official EULA](https://www.telerik.com/purchase/license-agreement/fiddler-enterprise-support)
+
+HTTP Capture is not an official Progress/Telerik product, fork or affiliated project. SAZ support is independently implemented. This motivation does not imply bypassing Fiddler licensing or feature parity with the Fiddler product family.
+
 ## 1. What the application does
 
 HTTP Capture collects proxy-aware HTTP/HTTPS requests and responses on the local device, stores session metadata and body files, and exports captures as SAZ or HAR. Its main purpose is capture and portable evidence collection. It does not include a request composer, AutoResponder, breakpoints, AI analysis, accounts, cloud synchronization or a telemetry upload feature.

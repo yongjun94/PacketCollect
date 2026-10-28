@@ -1,0 +1,28 @@
+name: Publish tested preview downloads
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['release/preview.json']
+permissions:
+  contents: read
+concurrency:
+  group: preview-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Test release provenance safeguards
+        run: python3 scripts/test_publish_preview.py -v
+      - name: Validate source builds and publish complete preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/publish_preview.py

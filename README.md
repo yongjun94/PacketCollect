@@ -1,5 +1,7 @@
 # HTTP Capture
 
+한국어 | [English](README.en.md)
+
 Windows·macOS·Android에서 HTTP/HTTPS를 로컬 수집하고 SAZ/HAR로 내보내는 개발 프로젝트입니다. **실제 소스는 `http-capture/` 한 곳에 있습니다.** ZIP 압축 해제나 `fixes` 덮어쓰기 없이 해당 폴더를 직접 수정·빌드합니다.
 
 ## 먼저 볼 파일

@@ -1,0 +1,22 @@
+name: Add English preview release descriptions
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['release/notes.en.md', 'release/INSTALL.en.md']
+permissions:
+  contents: read
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Add English text and verify existing packages are unchanged
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/update_release_english.py

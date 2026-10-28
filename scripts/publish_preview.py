@@ -90,6 +90,7 @@ def main():
         (assets/'SHA256SUMS.txt').write_text(''.join(f'{f["sha256"]}  {f["name"]}\n' for f in provenance['files']))
         (assets/'build-provenance.json').write_text(json.dumps(provenance, indent=2))
         shutil.copyfile(ROOT/'release/INSTALL.md', assets/'INSTALL.md')
+        shutil.copyfile(ROOT/'release/INSTALL.en.md', assets/'INSTALL.en.md')
         notes = temp/'notes.md'
         notes.write_text('# Windows / macOS / Android 다운로드\n\n'
                          '아래 Assets에서 운영체제에 맞는 파일을 선택하세요. 비공개 저장소 접근 권한이 필요합니다.\n\n'
@@ -105,6 +106,8 @@ def main():
                          '설치·인증서·기존 APK 업데이트 주의사항은 INSTALL.md를 확인하세요.\n\n'
                          f'소스 커밋: `{sha}`\n\n'
                          'SHA256SUMS.txt와 build-provenance.json으로 배포 파일과 CI 출처를 확인할 수 있습니다.\n')
+        english = (ROOT/'release/notes.en.md').read_text().replace('{{SOURCE_SHA}}', sha).strip()
+        notes.write_text(notes.read_text().rstrip() + '\n\n---\n\n<!-- HTTP_CAPTURE_ENGLISH -->\n\n' + english + '\n')
         # Keep incomplete uploads in a draft; publish only after all assets exist.
         gh('release', 'create', tag, *sorted(assets.iterdir()), '--repo', repo,
            '--target', sha, '--draft', '--prerelease', '--title', plan['title'], '--notes-file', notes)

@@ -10,7 +10,7 @@ Windows, macOS, Android용 로컬 HTTP 캡처 실험 프로젝트입니다. 모�
 | SAZ/HAR 출력 | `packages/capture_export` | 동일 공통 패키지 | 동일 공통 패키지 |
 | UI | `fixes/.../app.dart` 데스크톱 UI | `macos-fixes/.../app.dart` 별도 수정본 | `android-fixes/.../android_app.dart` 별도 UI |
 | 캡처 엔진 | Python/mitmproxy 별도 프로세스 | Python/mitmproxy 별도 프로세스 | Dart 로컬 프록시 + Kotlin VPN/CA |
-| OS 설정 | WinINet/CurrentUser CA | Start에서 시스템 HTTP/HTTPS 프록시 자동 적용·Stop에서 복원. CA 신뢰는 수동 | VPN 단위 프록시. CA 설치는 Android 시스템 절차 |
+| OS 설정 | WinINet/CurrentUser CA | Start에서 시스템 HTTP/HTTPS 프록시 자동 적용·Stop에서 복원. CA 설치·현재 사용자 SSL 신뢰·삭제는 앱에서 동의 후 진행 | VPN 단위 프록시. CA 설치는 Android 시스템 절차 |
 | 검증 | 사용자가 Windows 캡처와 Fiddler SAZ/DevTools HAR 가져오기 확인 | Apple Silicon 빌드·자동 테스트 통과, 사용자 curl HTTP 캡처 확인. 새 자동 프록시·브라우저 HTTPS는 실기기 미검증 | API35 에뮬레이터 검증. 실기기 HTTPS/CA 설치 미검증 |
 
 Android는 프록시를 사용하는 앱만 지원하며 전체 TCP/UDP 패킷 캡처 엔진이 아닙니다. 사용자 CA를 신뢰하지 않는 앱, 인증서 고정, HTTP/3는 복호화되지 않을 수 있습니다. iOS 독립 캡처는 구현되지 않았습니다.
@@ -39,7 +39,7 @@ Windows PowerShell에서는 `python scripts/materialize.py windows --output ../h
 
 ## macOS 자동 캡처 사용
 
-최신 Apple Silicon preview는 Start에서 시스템 HTTP/HTTPS 프록시를 연결합니다. macOS 관리자 승인이 필요할 수 있습니다. 기존 프록시/PAC/자동 검색을 발견하면 변경을 거부합니다. Stop·정상 종료 시 원래 설정을 복원합니다. 강제 종료·전원 손실 직후 복원은 보장되지 않으며 재실행 또는 Settings의 Restore / recover로 복구합니다. CA 신뢰는 키체인에서 수동 설정합니다. 모든 패킷이 아니라 시스템 프록시를 따르는 HTTP/HTTPS가 대상이며 기존 bypass 목록도 유지됩니다.
+최신 Apple Silicon preview는 Start에서 시스템 HTTP/HTTPS 프록시를 연결합니다. macOS 관리자 승인이 필요할 수 있습니다. 기존 프록시/PAC/자동 검색을 발견하면 변경을 거부합니다. Stop·정상 종료 시 원래 설정을 복원합니다. 강제 종료·전원 손실 직후 복원은 보장되지 않으며 재실행 또는 Settings의 Restore / recover로 복구합니다. HTTPS 캡처 시작 전 CA 신뢰를 확인하고, 필요하면 동의 후 현재 사용자 키체인에 공개 CA를 설치하고 SSL 신뢰를 설정합니다. Settings에서 설치·신뢰 확인·앱이 설치한 CA 삭제를 할 수 있습니다. 기존에 수동 설치한 미관리 인증서는 자동 변경하지 않습니다. 자세한 절차는 `macos-fixes/docs/macos-ca-trust.md`를 참조하세요. 모든 패킷이 아니라 시스템 프록시를 따르는 HTTP/HTTPS가 대상이며 기존 bypass 목록도 유지됩니다.
 
 빌드 [40611423214](https://github.com/yongjun94/PacketCollect/actions/runs/40611423214): arm64 빌드, Flutter analyze, UI 4건, exporter 7건, 프록시 mock 테스트 4건 및 내장 엔진 smoke 통과. 실제 관리자 승인·브라우저 HTTPS·강제 종료 후 복원은 미검증입니다.
 
@@ -56,3 +56,5 @@ CA 설치는 사용자 동의가 필요합니다. 캡처와 내보낸 파일에�
 3. NTLM/Negotiate 등 연결 단위 인증을 합성 테스트와 실제 도메인에서 검증.
 4. 원본 보존 또는 선택적 민감정보 마스킹을 명확히 선택하고, SAZ/HAR 전체 필드·본문·메타데이터의 누출 및 호환성 테스트.
 5. macOS/Android 실기기 검증과 공통 UI·플랫폼 어댑터 통합. WebSocket·iOS는 별도 범위로 진행.
+
+CA 관리 빌드 [40612696093](https://github.com/yongjun94/PacketCollect/actions/runs/40612696093): 기존 UI/Exporter 테스트와 인증서 동의·소유권 mock 테스트 5건 통과. macOS 실제 승인 UI와 Safari HTTPS는 아직 실기기 확인이 필요합니다.

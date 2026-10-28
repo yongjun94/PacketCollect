@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['release/notes.en.md', 'release/INSTALL.en.md']
+    paths: ['release/notes.en.md', 'release/INSTALL.en.md', 'release/distribution-status.md']
 permissions:
   contents: read
 jobs:

@@ -26,7 +26,15 @@ def main():
     existing = {a['name']: (a['id'], a['size'], a.get('digest')) for a in before['assets']}
     english = (ROOT/'release/notes.en.md').read_text().replace('{{SOURCE_SHA}}', SOURCE).strip()
     korean = before.get('body', '').split('\n\n---\n\n' + MARKER)[0].rstrip()
-    body = korean + '\n\n---\n\n' + MARKER + '\n\n' + english + '\n'
+    status_begin = '<!-- HTTP_CAPTURE_DISTRIBUTION_STATUS -->'
+    status_end = '<!-- END_HTTP_CAPTURE_DISTRIBUTION_STATUS -->'
+    if korean.startswith(status_begin):
+        if status_end not in korean:
+            raise RuntimeError('Distribution status marker is incomplete')
+        korean = korean.split(status_end, 1)[1].lstrip()
+    status = (ROOT/'release/distribution-status.md').read_text().strip()
+    body = (status_begin + '\n' + status + '\n' + status_end + '\n\n' + korean
+            + '\n\n---\n\n' + MARKER + '\n\n' + english + '\n')
     guide = ROOT/'release/INSTALL.en.md'
     guide_digest = 'sha256:' + hashlib.file_digest(guide.open('rb'), 'sha256').hexdigest()
     prior = next((a for a in before['assets'] if a['name'] == guide.name), None)
@@ -50,3 +58,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

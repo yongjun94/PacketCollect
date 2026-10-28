@@ -108,6 +108,8 @@ def main():
                          'SHA256SUMS.txt와 build-provenance.json으로 배포 파일과 CI 출처를 확인할 수 있습니다.\n')
         english = (ROOT/'release/notes.en.md').read_text().replace('{{SOURCE_SHA}}', sha).strip()
         notes.write_text(notes.read_text().rstrip() + '\n\n---\n\n<!-- HTTP_CAPTURE_ENGLISH -->\n\n' + english + '\n')
+        status = (ROOT/'release/distribution-status.md').read_text().strip()
+        notes.write_text('<!-- HTTP_CAPTURE_DISTRIBUTION_STATUS -->\n' + status + '\n<!-- END_HTTP_CAPTURE_DISTRIBUTION_STATUS -->\n\n' + notes.read_text())
         # Keep incomplete uploads in a draft; publish only after all assets exist.
         gh('release', 'create', tag, *sorted(assets.iterdir()), '--repo', repo,
            '--target', sha, '--draft', '--prerelease', '--title', plan['title'], '--notes-file', notes)
@@ -130,3 +132,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

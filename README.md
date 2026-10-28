@@ -1,5 +1,7 @@
 # HTTP Capture
 
+> **공개·배포 상태:** 실행 파일의 기술 검증과 의존성 라이선스 준수 검토는 별개입니다. 현재 라이선스 검토는 미완료입니다. [공개용 소개 초안](docs/public-overview.ko.md) · [검토 현황](docs/license-review-status.md) · [공개 전 확인 목록](docs/publication-checklist.md)
+
 한국어 | [English](README.en.md)
 
 Windows·macOS·Android에서 HTTP/HTTPS를 로컬 수집하고 SAZ/HAR로 내보내는 개발 프로젝트입니다. **실제 소스는 `http-capture/` 한 곳에 있습니다.** ZIP 압축 해제나 `fixes` 덮어쓰기 없이 해당 폴더를 직접 수정·빌드합니다.

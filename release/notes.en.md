@@ -1,5 +1,7 @@
 ## English — Windows, macOS and Android downloads
 
+**Distribution status: license review is incomplete.** Build/test success does not establish third-party redistribution compliance. See the [review record](https://github.com/yongjun94/PacketCollect/blob/main/docs/license-review-status.md) before treating these technical preview packages as cleared for external redistribution.
+
 HTTP Capture is a local HTTP/HTTPS capture tool with SAZ and HAR export. Download the file for your platform from **Assets** below. A GitHub account with access to this private repository is required.
 
 | Download | Platform | Installation |

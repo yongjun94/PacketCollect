@@ -1,5 +1,7 @@
 # HTTP Capture
 
+> **Publication and distribution status:** Technical validation is separate from license compliance. Third-party license review is incomplete. [Public-facing overview draft](docs/public-overview.en.md) · [Review status](docs/license-review-status.md) · [Publication checklist](docs/publication-checklist.md)
+
 [한국어](README.md) | English
 
 **A local HTTP/HTTPS capture tool with shared SAZ/HAR export for Windows, macOS and Android.** HTTP Capture focuses on collecting requests, responses and bodies for troubleshooting and evidence exchange. It is a development preview with platform-specific limitations, not an all-packet network monitor.

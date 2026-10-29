@@ -44,11 +44,31 @@ def wait_text(label, tap=False, timeout=120):
     raise RuntimeError('UI text missing: '+label+' '+ET.tostring(tree,encoding='unicode') if 'tree' in locals() else 'UI unavailable')
 
 
+def tap_until(label, expected, timeout=120):
+    """Retry a missed tap only while the expected destination is absent."""
+    end = time.monotonic() + timeout
+    while time.monotonic() < end:
+        tree = screen()
+        nodes = list(tree.iter('node'))
+        if any(expected in (n.attrib.get('text', '') + ' ' + n.attrib.get('content-desc', ''))
+               for n in nodes):
+            return
+        button = next((n for n in nodes
+                       if label in (n.attrib.get('text', '') + ' ' + n.attrib.get('content-desc', ''))
+                       and n.attrib.get('clickable') == 'true'
+                       and n.attrib.get('enabled') == 'true'), None)
+        if button is not None:
+            coords = list(map(int, re.findall(r'\\d+', button.attrib['bounds'])))
+            adb('shell', 'input', 'tap', str((coords[0]+coords[2])//2), str((coords[1]+coords[3])//2))
+        time.sleep(2)
+    raise RuntimeError('Navigation did not complete: ' + label + ' -> ' + expected)
+
+
 adb('install','-r','http-capture/apps/capture_app/build/app/outputs/flutter-apk/app-debug.apk')
 adb('shell','am','start','-n','dev.httpcapture.capture_app.all/dev.httpcapture.capture_app.MainActivity')
 time.sleep(15)
 wait_text('Stopped')
-wait_text('HTTPS settings',tap=True)
+tap_until('HTTPS settings', '모든 호스트 복호화')
 wait_text('모든 호스트 복호화',tap=True)
 wait_text('인증서 준비 및 설정 열기',tap=True)
 time.sleep(3)

@@ -54,9 +54,26 @@ wait_text('인증서 준비 및 설정 열기',tap=True)
 time.sleep(3)
 files=adb('shell','ls','/sdcard/Download')
 assert any(n.startswith('HTTP-Capture-Root-') and n.endswith('.crt') for n in files.splitlines()),files
-# Security Settings can open more than one activity. Bring our existing task
-# forward instead of assuming a single Back returns to the app dialog.
-adb('shell','am','start','-f','0x20000000','-n','dev.httpcapture.capture_app.all/dev.httpcapture.capture_app.MainActivity')
+# CA export precedes the asynchronous launch of Security Settings. Wait for
+# that activity to appear before returning, otherwise a late launch steals focus.
+end = time.monotonic() + 60
+while time.monotonic() < end:
+    tree = screen()
+    if any(n.attrib.get('package') in ('com.android.settings', 'com.android.permissioncontroller')
+           for n in tree.iter('node')):
+        break
+    time.sleep(1)
+else:
+    raise RuntimeError('Security Settings did not open after CA export')
+for _ in range(8):
+    adb('shell', 'input', 'keyevent', '4')
+    time.sleep(1)
+    tree = screen()
+    if any(n.attrib.get('package') == 'dev.httpcapture.capture_app.all'
+           for n in tree.iter('node')):
+        break
+else:
+    raise RuntimeError('Could not return from Security Settings to capture app')
 wait_text('완료',tap=True)
 wait_text('HTTPS on')
 wait_text('Test TLS',tap=True)

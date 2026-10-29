@@ -58,7 +58,7 @@ def tap_until(label, expected, timeout=120):
                        and n.attrib.get('clickable') == 'true'
                        and n.attrib.get('enabled') == 'true'), None)
         if button is not None:
-            coords = list(map(int, re.findall(r'\\d+', button.attrib['bounds'])))
+            coords = list(map(int, re.findall(r'\d+', button.attrib['bounds'])))
             adb('shell', 'input', 'tap', str((coords[0]+coords[2])//2), str((coords[1]+coords[3])//2))
         time.sleep(2)
     raise RuntimeError('Navigation did not complete: ' + label + ' -> ' + expected)

@@ -110,7 +110,8 @@ class LocalProxyEngine implements CaptureEngine {
       }
     });
   }
-  Future<void> _handle(HttpRequest request, {Uri? tlsOrigin}) async {
+  Future<void> _handle(HttpRequest request, {Uri? tlsOrigin, Map<String, dynamic>? tlsMetadata}) async {
+    final tls = <String, dynamic>{...?tlsMetadata};
     final record = !_paused;
     final id = _id();
     final start = DateTime.now().toUtc();
@@ -137,7 +138,8 @@ class LocalProxyEngine implements CaptureEngine {
         final downstream = await request.response.detachSocket();
         _sockets.add(downstream);
         state = 'tunneled';
-        error = 'HTTPS tunnel only. TLS contents, headers and bodies were not decrypted.';
+        // Tunneling is a capture mode, not an HTTP or TLS error.
+        tls.addAll({'mode': 'tunnel', 'contentsCaptured': false});
         // Socket backpressure is preserved; Stop closes both directions.
         try {
           await Future.wait([
@@ -180,6 +182,11 @@ class LocalProxyEngine implements CaptureEngine {
       }
     } catch (e) {
       state = 'error'; error = '$e';
+      if (e is TlsCaptureFailure) {
+        tls.addAll({'mode': 'decrypt', 'failureStage': e.stage, 'detail': '${e.cause}'});
+      } else if (tlsOrigin != null) {
+        tls.addAll({'failureStage': 'upstream-or-http', 'detail': '$e'});
+      }
       try { request.response.statusCode = 502; await request.response.close(); } catch (_) {}
     } finally {
       try {
@@ -190,7 +197,7 @@ class LocalProxyEngine implements CaptureEngine {
           final session = CaptureSession(id: id, runId: _run, sourceDevice: 'android-local', startTime: start, endTime: DateTime.now().toUtc(),
             request: HttpMessage(version: r.version, headers: r.headers, method: r.method, url: r.url, body: request.method == 'CONNECT' ? null : requestBody.ref(state == 'complete')),
             response: s == null ? null : HttpMessage(version: s.version, headers: s.headers, status: s.status, reason: s.reason, body: responseBody.ref(state == 'complete')),
-            captureStatus: state, error: error,
+            captureStatus: state, error: error, tls: tls,
             connection: {'engine': 'dart-explicit-proxy', 'headerRepresentation': 'parsed; original order/casing unavailable', 'responseVersion': 'HTTP/1.1 normalized; upstream version unavailable', 'tlsDecrypted': tlsOrigin != null});
           _events.add({'type': 'session', 'session': session.toJson()});
         }
@@ -199,36 +206,63 @@ class LocalProxyEngine implements CaptureEngine {
   }
   Future<void> _intercept(HttpRequest connect, Uri authority) async {
     if (_tlsServers.length >= 64) throw StateError('TLS connection limit reached');
-    final context = await tlsIdentity!(authority.host);
-    if (_server == null) throw StateError('Capture stopped');
-    final server = await HttpServer.bindSecure(InternetAddress.loopbackIPv4, 0, context);
-    _tlsServers.add(server);
-    Object? tlsError;
-    var receivedHttp = false;
-    final listener = server.listen((request) {
-      receivedHttp = true;
-      final work = _handle(request, tlsOrigin: authority);
-      _active.add(work);
-      unawaited(work.whenComplete(() => _active.remove(work)));
-    }, onError: (Object e) { tlsError = e; });
+    var stage = 'certificate-generation';
+    HttpServer? server;
+    StreamSubscription<HttpRequest>? listener;
     Socket? bridge, downstream;
+    SecureSocket? secure;
+    var receivedHttp = false;
+    Object? httpError;
     try {
-      bridge = await Socket.connect(InternetAddress.loopbackIPv4, server.port);
-      _sockets.add(bridge);
+      final context = await tlsIdentity!(authority.host);
+      if (_server == null) throw StateError('Capture stopped');
+      // Terminate TLS directly on CONNECT's socket, so handshake exceptions are
+      // observed here rather than being hidden behind HttpServer.bindSecure.
+      // The HTTP parser below supports HTTP/1.1 only; never advertise h2.
+      context.setAlpnProtocols(['http/1.1'], true);
+      server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      _tlsServers.add(server);
+      final metadata = <String, dynamic>{'mode': 'decrypt', 'contentsCaptured': true};
+      listener = server.listen((request) {
+        receivedHttp = true;
+        final work = _handle(request, tlsOrigin: authority, tlsMetadata: metadata);
+        _active.add(work);
+        unawaited(work.whenComplete(() => _active.remove(work)));
+      }, onError: (Object error) { httpError = error; });
       connect.response.statusCode = 200;
       connect.response.contentLength = 0;
       downstream = await connect.response.detachSocket();
       _sockets.add(downstream);
-      final a = bridge, b = downstream;
+      stage = 'client-tls-handshake';
+      secure = await SecureSocket.secureServer(
+        downstream, context, supportedProtocols: ['http/1.1'],
+      ).timeout(const Duration(seconds: 20), onTimeout: () {
+        downstream?.destroy();
+        throw TimeoutException('Client TLS handshake timed out');
+      });
+      _sockets.remove(downstream);
+      _sockets.add(secure);
+      metadata['alpn'] = secure.selectedProtocol ?? 'not-negotiated';
+      stage = 'client-http';
+      bridge = await Socket.connect(InternetAddress.loopbackIPv4, server.port);
+      _sockets.add(bridge);
+      final a = bridge, b = secure;
       await Future.wait([
         a.addStream(b).whenComplete(() => a.close()),
         b.addStream(a).whenComplete(() => b.close()),
       ]);
-      if (!receivedHttp || tlsError != null) throw HandshakeException('No decrypted HTTP request or TLS handshake failed; check client CA trust/pinning. ${tlsError ?? ''}');
+      if (httpError != null) throw httpError!;
+      if (!receivedHttp) throw const FormatException(
+        'TLS completed, but client sent no HTTP/1.1 request. This does not establish certificate pinning.');
+    } catch (error) {
+      throw TlsCaptureFailure(stage, error);
     } finally {
-      if (bridge != null) { _sockets.remove(bridge); bridge.destroy(); }
-      if (downstream != null) { _sockets.remove(downstream); downstream.destroy(); }
-      await server.close(force: true); await listener.cancel(); _tlsServers.remove(server);
+      for (final socket in [bridge, secure, downstream]) {
+        if (socket != null) { _sockets.remove(socket); socket.destroy(); }
+      }
+      await server?.close(force: true);
+      await listener?.cancel();
+      if (server != null) _tlsServers.remove(server);
     }
   }
   @override
@@ -274,3 +308,13 @@ class _Body {
   BodyReference ref(bool complete) => BodyReference(path, size, complete && !truncated);
 }
 
+
+/// Reports the observed failure stage; it does not infer pinning from an alert.
+class TlsCaptureFailure implements Exception {
+  final String stage;
+  final Object cause;
+  const TlsCaptureFailure(this.stage, this.cause);
+  @override
+  String toString() => 'HTTPS capture failed [$stage]: $cause. '
+      'Client CA trust, certificate policy and TLS compatibility need separate checks; pinning is not confirmed.';
+}

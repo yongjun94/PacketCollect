@@ -3,7 +3,7 @@
 Excel and Copilot reach the CONNECT proxy, work when interception is off, and fail when interception is on. A browser succeeds on the same device. This narrows the problem to interception, but does not prove certificate pinning.
 
 ## Changes
-- TLS terminates directly on the detached CONNECT socket. The returned handshake exception is retained in session TLS metadata instead of a generic "check trust/pinning" message.
+- TLS terminates on a raw loopback socket relayed from CONNECT. HTTP-owned detached sockets cannot be upgraded directly. The returned handshake exception is retained in session TLS metadata instead of a generic "check trust/pinning" message.
 - Advertise HTTP/1.1 explicitly using ALPN. The parser does not implement HTTP/2, and does not advertise h2.
 - Separate certificate-generation, client-tls-handshake, client-http, and upstream-or-http failures.
 - Tunnel sessions are not marked with an error. Missing response content is displayed as not captured, not as a measured zero-byte server response.

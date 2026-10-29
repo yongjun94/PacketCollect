@@ -14,6 +14,7 @@ class LocalProxyEngine implements CaptureEngine {
   final bool decryptAllHosts;
   final SecurityContext? upstreamContext;
   final _tlsServers = <HttpServer>{};
+  final _tlsListeners = <ServerSocket>{};
   bool _decrypt = false;
   LocalProxyEngine(this.root, {this.bodyLimit = 64 * 1024 * 1024,
     this.tlsIdentity, this.decryptHosts = const {}, this.decryptAllHosts = false, this.upstreamContext});
@@ -208,58 +209,98 @@ class LocalProxyEngine implements CaptureEngine {
     if (_tlsServers.length >= 64) throw StateError('TLS connection limit reached');
     var stage = 'certificate-generation';
     HttpServer? server;
+    ServerSocket? tlsListener;
     StreamSubscription<HttpRequest>? listener;
     Socket? bridge, downstream;
-    SecureSocket? secure;
+    Future<void>? termination;
     var receivedHttp = false;
-    Object? httpError;
+    Object? tlsError, httpError;
+    final metadata = <String, dynamic>{'mode': 'decrypt', 'contentsCaptured': true};
     try {
       final context = await tlsIdentity!(authority.host);
       if (_server == null) throw StateError('Capture stopped');
-      // Terminate TLS directly on CONNECT's socket, so handshake exceptions are
-      // observed here rather than being hidden behind HttpServer.bindSecure.
-      // The HTTP parser below supports HTTP/1.1 only; never advertise h2.
       context.setAlpnProtocols(['http/1.1'], true);
-      server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-      _tlsServers.add(server);
-      final metadata = <String, dynamic>{'mode': 'decrypt', 'contentsCaptured': true};
-      listener = server.listen((request) {
+      final http = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      server = http;
+      _tlsServers.add(http);
+      listener = http.listen((request) {
         receivedHttp = true;
         final work = _handle(request, tlsOrigin: authority, tlsMetadata: metadata);
         _active.add(work);
         unawaited(work.whenComplete(() => _active.remove(work)));
       }, onError: (Object error) { httpError = error; });
+      // HttpResponse.detachSocket returns an HTTP-owned wrapper which cannot be
+      // upgraded directly. Terminate TLS on a raw loopback socket and observe
+      // its handshake future, then forward plaintext to the HTTP/1.1 parser.
+      tlsListener = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+      _tlsListeners.add(tlsListener);
+      var accepted = false;
+      Future<void> terminate(Socket raw) async {
+        SecureSocket? secure;
+        Socket? plain;
+        _sockets.add(raw);
+        try {
+          stage = 'client-tls-handshake';
+          secure = await SecureSocket.secureServer(raw, context,
+            supportedProtocols: ['http/1.1']).timeout(const Duration(seconds: 20),
+            onTimeout: () {
+              raw.destroy();
+              throw TimeoutException('Client TLS handshake timed out');
+            });
+          _sockets.remove(raw);
+          _sockets.add(secure);
+          metadata['alpn'] = secure.selectedProtocol ?? 'not-negotiated';
+          stage = 'client-http';
+          plain = await Socket.connect(InternetAddress.loopbackIPv4, http.port);
+          _sockets.add(plain);
+          final a = plain, b = secure;
+          await Future.wait([
+            a.addStream(b).whenComplete(() => a.close()),
+            b.addStream(a).whenComplete(() => b.close()),
+          ]);
+        } catch (error) {
+          tlsError = error;
+          downstream?.destroy();
+        } finally {
+          for (final socket in [plain, secure, raw]) {
+            if (socket != null) { _sockets.remove(socket); socket.destroy(); }
+          }
+        }
+      }
+      tlsListener.listen((raw) {
+        if (accepted) { raw.destroy(); return; }
+        accepted = true;
+        termination = terminate(raw);
+      });
+      bridge = await Socket.connect(InternetAddress.loopbackIPv4, tlsListener.port);
+      _sockets.add(bridge);
       connect.response.statusCode = 200;
       connect.response.contentLength = 0;
       downstream = await connect.response.detachSocket();
       _sockets.add(downstream);
-      stage = 'client-tls-handshake';
-      secure = await SecureSocket.secureServer(
-        downstream, context, supportedProtocols: ['http/1.1'],
-      ).timeout(const Duration(seconds: 20), onTimeout: () {
-        downstream?.destroy();
-        throw TimeoutException('Client TLS handshake timed out');
-      });
-      _sockets.remove(downstream);
-      _sockets.add(secure);
-      metadata['alpn'] = secure.selectedProtocol ?? 'not-negotiated';
-      stage = 'client-http';
-      bridge = await Socket.connect(InternetAddress.loopbackIPv4, server.port);
-      _sockets.add(bridge);
-      final a = bridge, b = secure;
-      await Future.wait([
-        a.addStream(b).whenComplete(() => a.close()),
-        b.addStream(a).whenComplete(() => b.close()),
-      ]);
+      final a = bridge, b = downstream;
+      try {
+        await Future.wait([
+          a.addStream(b).whenComplete(() => a.close()),
+          b.addStream(a).whenComplete(() => b.close()),
+        ]);
+      } catch (error) {
+        if (tlsError == null) rethrow;
+      }
+      await termination;
+      if (tlsError != null) throw tlsError!;
       if (httpError != null) throw httpError!;
       if (!receivedHttp) throw const FormatException(
         'TLS completed, but client sent no HTTP/1.1 request. This does not establish certificate pinning.');
     } catch (error) {
       throw TlsCaptureFailure(stage, error);
     } finally {
-      for (final socket in [bridge, secure, downstream]) {
+      for (final socket in [bridge, downstream]) {
         if (socket != null) { _sockets.remove(socket); socket.destroy(); }
       }
+      await tlsListener?.close();
+      if (tlsListener != null) _tlsListeners.remove(tlsListener);
+      await termination;
       await server?.close(force: true);
       await listener?.cancel();
       if (server != null) _tlsServers.remove(server);
@@ -274,6 +315,7 @@ class LocalProxyEngine implements CaptureEngine {
     _server = null;
     await _listener?.close();_listener=null;
     await server.close(force: true);
+    for (final listener in _tlsListeners.toList()) { await listener.close(); }
     for (final tls in _tlsServers.toList()) { await tls.close(force: true); }
     for (final socket in _sockets.toList()) { socket.destroy(); }
     _client.close(force: true);

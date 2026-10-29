@@ -54,7 +54,9 @@ wait_text('인증서 준비 및 설정 열기',tap=True)
 time.sleep(3)
 files=adb('shell','ls','/sdcard/Download')
 assert any(n.startswith('HTTP-Capture-Root-') and n.endswith('.crt') for n in files.splitlines()),files
-adb('shell','input','keyevent','4')
+# Security Settings can open more than one activity. Bring our existing task
+# forward instead of assuming a single Back returns to the app dialog.
+adb('shell','am','start','-f','0x20000000','-n','dev.httpcapture.capture_app.all/dev.httpcapture.capture_app.MainActivity')
 wait_text('완료',tap=True)
 wait_text('HTTPS on')
 wait_text('Test TLS',tap=True)

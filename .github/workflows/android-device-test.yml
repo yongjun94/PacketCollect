@@ -1,10 +1,13 @@
 name: Android device smoke
 # Uses the default Android image to avoid unrelated Google service ANRs.
 on:
+  push:
+    branches: [main]
+    paths: ['.github/android-device-retest.json']
   workflow_dispatch:
     inputs:
       build_run_id:
-        description: Successful Android build run ID for the APK to test
+        description: Android build run ID containing the compiled APK to test
         required: true
         type: string
 permissions:
@@ -20,6 +23,39 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Resolve and verify compiled APK
+        id: apk
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_RUN: ${{ inputs.build_run_id }}
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          def api(path):
+              return json.loads(subprocess.check_output(['gh', 'api', path], text=True))
+          plan = json.loads(Path('.github/android-device-retest.json').read_text())
+          run_id = os.environ.get('REQUESTED_RUN') or str(plan['build_run_id'])
+          assert run_id.isdigit()
+          base = 'repos/' + os.environ['GITHUB_REPOSITORY'] + '/actions'
+          run = api(base + '/runs/' + run_id)
+          assert run['path'] == '.github/workflows/android-build.yml'
+          assert run['status'] == 'completed'
+          if not os.environ.get('REQUESTED_RUN'):
+              assert run['head_sha'] == plan['source_sha']
+          jobs = api(base + '/runs/' + run_id + '/jobs')['jobs']
+          steps = {s['name']: s['conclusion'] for j in jobs for s in j['steps']}
+          for name in ['Analyze and run HTTP proxy integration tests', 'Build installable debug APK']:
+              assert steps.get(name) == 'success', (name, steps.get(name))
+          artifacts = api(base + '/runs/' + run_id + '/artifacts')['artifacts']
+          matches = [a for a in artifacts if a['name'] == 'HTTP-Capture-Android-preview' and not a['expired']]
+          assert len(matches) == 1
+          if not os.environ.get('REQUESTED_RUN'):
+              assert matches[0]['id'] == plan['artifact_id']
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write('run_id=' + run_id + '\\n')
+          print('Testing compiled APK from source', run['head_sha'])
+          PY
       - name: Prepare API35 emulator at an explicit AVD path
         run: |
           sudo rm -rf /usr/share/dotnet "$ANDROID_HOME/ndk"
@@ -36,12 +72,21 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: HTTP-Capture-Android-preview
-          run-id: ${{ inputs.build_run_id }}
+          run-id: ${{ steps.apk.outputs.run_id }}
           github-token: ${{ github.token }}
           path: http-capture/apps/capture_app/build/app/outputs/flutter-apk
       - name: Exercise APK on Android
         timeout-minutes: 15
         run: |
+          if [ -z "${{ inputs.build_run_id }}" ]; then
+            python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          plan = json.loads(Path('.github/android-device-retest.json').read_text())
+          apk = Path('http-capture/apps/capture_app/build/app/outputs/flutter-apk/app-debug.apk')
+          assert hashlib.sha256(apk.read_bytes()).hexdigest() == plan['apk_sha256']
+          PY
+          fi
           timeout 120 adb wait-for-device || { cat emulator.log; exit 1; }
           for i in $(seq 1 120); do
             if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; then break; fi

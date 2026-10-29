@@ -94,10 +94,9 @@ for _ in range(8):
         break
 else:
     raise RuntimeError('Could not return from Security Settings to capture app')
-wait_text('완료',tap=True)
-wait_text('HTTPS on')
-wait_text('Test TLS',tap=True)
-wait_text('HTTPS test passed')
+tap_until('완료', 'HTTPS on')
+tap_until('Test TLS', 'HTTPS test passed')
+subprocess.run(['python3', str(Path(__file__).with_name('verify_android_certificates.py'))], check=True)
 wait_text('Start',tap=True)
 wait_text('OK',tap=True)  # Android VPN consent, not silently accepted by app.
 wait_text('VPN proxy active')

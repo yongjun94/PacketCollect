@@ -92,12 +92,20 @@ class MainActivity : FlutterActivity() {
                     "stop" -> stopAndReport(result)
                     "heartbeat" -> { networkState(); result.success(CaptureService.heartbeat()) }
                     "networkState" -> result.success(networkState())
-                    "caInfo", "tlsIdentity" -> {
+                    "caInfo", "tlsIdentity", "certificateProfileCheck", "caUpgrade" -> {
                         val host = call.argument<String>("host")
                         Thread {
                             try {
                                 val ca = certificateAuthority
-                                val value = if(call.method == "caInfo") ca.info() else ca.leaf(requireNotNull(host))
+                                val value = when(call.method) {
+                                    "caInfo" -> ca.info()
+                                    "certificateProfileCheck" -> ca.checkProfile()
+                                    "caUpgrade" -> {
+                                        check(!CaptureService.active()) { "Stop capture before replacing the CA" }
+                                        ca.upgrade(call.argument<Boolean>("consent") == true)
+                                    }
+                                    else -> ca.leaf(requireNotNull(host))
+                                }
                                 runOnUiThread { result.success(value) }
                             } catch(e: Exception) { runOnUiThread { result.error("certificate",e.message,null) } }
                         }.start()

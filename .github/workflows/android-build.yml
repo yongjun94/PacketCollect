@@ -60,6 +60,9 @@ jobs:
             if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; then break; fi
             sleep 2
           done
+          adb shell settings put global window_animation_scale 0
+          adb shell settings put global transition_animation_scale 0
+          adb shell settings put global animator_duration_scale 0
           adb shell input keyevent 82
           python3 http-capture/scripts/android_device_smoke.py
       - name: Device diagnostics
@@ -71,6 +74,8 @@ jobs:
           name: Android-test-diagnostics
           path: |
             android-device-smoke.json
+            android-certificate-profile.json
+            android-certificate-profile/
             android-logcat.txt
             emulator.log
             capture-ui.xml

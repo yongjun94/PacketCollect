@@ -62,6 +62,24 @@ class _CaptureState extends State<_Capture> {
         const Text('프록시를 사용하는 모든 HTTPS 연결에 적용합니다. 사용자 CA를 신뢰하지 않거나 인증서 고정을 사용하는 앱은 연결이 실패할 수 있습니다. 문제가 생기면 이 기능을 끄고 캡처를 다시 시작하세요.'),
         Text(info['trusted']==true ? '인증서: 기기 저장소에서 확인됨' : '인증서: 설치 필요'),
         Text('인증서 준비를 누르면 Downloads에 HTTP-Capture-Root-${(info['fingerprint'] as String).replaceAll(":","").substring(56)}.crt를 저장하고 보안 설정을 엽니다. Android 11 이상에서는 설정에서 CA 인증서를 직접 선택해 설치해야 합니다.'),
+        if(info['profileCurrent']==false) ...[
+          const Text('이전 CA에는 SKI/AKI가 없습니다. 규격 업데이트 후 새 인증서를 설치해야 합니다.'),
+          TextButton(onPressed:() async {
+            final approved=await showDialog<bool>(context:c,builder:(d)=>AlertDialog(
+              title:const Text('CA 인증서 규격 업데이트'),
+              content:const Text('로컬 CA 키는 유지하고 공개 인증서를 다시 발급합니다. 지문이 바뀌므로 이전 HTTP Capture CA를 Android 설정에서 제거하고 새 CA를 설치해야 합니다. 캡처 데이터는 유지됩니다. 진행하시겠습니까?'),
+              actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('취소')),
+                FilledButton(onPressed:()=>Navigator.pop(d,true),child:const Text('업데이트'))]));
+            if(approved!=true)return;
+            try {
+              final next=(await androidBridge.invokeMapMethod<String,dynamic>('caUpgrade',{'consent':true}))!;
+              identities.clear();
+              if(!mounted)return;
+              setState(()=>decrypt=false);
+              if(c.mounted)update((){info=next;message='규격 업데이트 완료. 인증서 준비 버튼으로 새 CA를 설치한 뒤 복호화를 다시 켜세요.';});
+            } catch(e) { if(c.mounted)update(()=>message='규격 업데이트 실패: $e'); }
+          },child:const Text('CA 규격 업데이트')),
+        ],
         if(message!=null) Text(message!),
         FilledButton(onPressed:() async { try { final value=await androidBridge.invokeMethod<String>('prepareCa'); if(c.mounted) update(()=>message=value??'보안 설정에서 인증서를 설치해 주세요.'); } catch(e) { if(c.mounted) update(()=>message='인증서 준비 실패: $e'); } },child:const Text('인증서 준비 및 설정 열기')),
         TextButton(onPressed:() async {try {final next=(await androidBridge.invokeMapMethod<String,dynamic>('caInfo'))!;if(c.mounted)update((){info=next;message='인증서 상태를 확인했습니다.';});}catch(e){if(c.mounted)update(()=>message='상태 확인 실패: $e');}},child:const Text('설치 상태 확인')),
@@ -69,6 +87,7 @@ class _CaptureState extends State<_Capture> {
       ])),actions:[FilledButton(onPressed:()=>Navigator.pop(c),child:const Text('완료'))])));
   }
   Future<void> selfTestHttps() async {
+    await androidBridge.invokeMapMethod<String,dynamic>('certificateProfileCheck');
     final info=await androidBridge.invokeMapMethod<String,dynamic>('caInfo');
     final trust=SecurityContext(withTrustedRoots:false)..setTrustedCertificatesBytes(utf8.encode(info!['pem'] as String));
     final origin=await HttpServer.bindSecure(InternetAddress.loopbackIPv4,0,await identity('127.0.0.1'));

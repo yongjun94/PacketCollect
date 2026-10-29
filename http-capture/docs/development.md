@@ -1,3 +1,5 @@
+> **초기 설계·검증 기록 / Historical design and validation record.** 현재 지원 대상은 Windows와 macOS뿐입니다. 아래 과거 계획·미구현 상태·모바일 항목은 최신 제품 범위를 뜻하지 않습니다. [현재 개발 안내](../README.md) · [현재 아키텍처](../../docs/architecture.ko.md) · [지원 정책](../../docs/platform-support.md)
+
 # 개발과 재현
 
 검증 SDK: Flutter 3.35.5 (git ac4e799d237041cf905519190471f657b657155a), Dart 3.9.2, Python 3.12.14. 엔진은 mitmproxy 12.3.0으로 고정했습니다. 최초 12.2.1에서 보안 감사 후 상향했고 통합 테스트를 다시 수행합니다. 모든 Python runtime 전이 의존성은 universal 해시 lock에 기록됩니다. Flutter/Dart pubspec.lock도 포함됩니다.

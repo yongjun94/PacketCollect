@@ -18,6 +18,13 @@ class Tests(unittest.TestCase):
             changed=copy.deepcopy(valid);changed[key]=value
             with self.assertRaises(ValueError):module.validate_run(changed,build,'known','owner/repo')
 
+    def test_desktop_only_release_scope(self):
+        module.validate_builds([{'platform':'windows'}, {'platform':'macos'}])
+        for platforms in ([], ['windows'], ['android','windows','macos'],
+                          ['windows','windows'], ['macos','ios']):
+            with self.assertRaises(ValueError):
+                module.validate_builds([{'platform':p} for p in platforms])
+
     def test_wrong_platform_payload_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'app.zip'

@@ -1,3 +1,5 @@
+> **초기 설계·검증 기록 / Historical design and validation record.** 현재 지원 대상은 Windows와 macOS뿐입니다. 아래 과거 계획·미구현 상태·모바일 항목은 최신 제품 범위를 뜻하지 않습니다. [현재 개발 안내](../README.md) · [현재 아키텍처](../../docs/architecture.ko.md) · [지원 정책](../../docs/platform-support.md)
+
 # 엔진 프로토콜
 
 기본 listen=127.0.0.1, port=8877. Remote bind 인자는 없습니다. `--no-decrypt`는 CONNECT pass-through이며 해당 HTTPS의 HTTP 세션은 기록되지 않습니다. HTTP/2는 실제 ALPN h2 end-to-end 테스트를 수행했습니다. HTTP/3, WebSocket frame은 지원 범위 밖입니다.

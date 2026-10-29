@@ -1,5 +1,7 @@
 # HTTP Capture — 전체 구조와 UI 안내
 
+> **현재 지원: Windows x64 / macOS Apple Silicon.** Android 개발·배포는 중단했습니다. 아래는 데스크톱 가이드입니다. [지원 정책](platform-support.md)
+
 [English](architecture.en.md) · [프로젝트 첫 화면](../README.md) · [실행판 다운로드](https://github.com/yongjun94/PacketCollect/releases/tag/v0.1.0-preview.20261028)
 
 이 문서는 현재 구현된 Preview를 설명합니다. 초기 요구사항 전체가 완성되었다는 뜻은 아닙니다. 아래 UI 그림은 실제 코드에 근거한 설명용 도식이며 실행 화면을 촬영한 스크린샷이 아닙니다. 예시 URL·크기·세션은 가상 데이터입니다.
@@ -22,17 +24,7 @@ HTTP Capture는 HTTP/HTTPS 요청과 응답을 로컬에 저장하고 SAZ/HAR로
 
 ![플랫폼별 엔진과 공통 모듈](images/architecture.svg)
 
-위쪽 두 영역은 수집 방식이 다르고 아래쪽 공통 모듈은 같습니다. 그림의 아래 방향 화살표는 수집된 세션 데이터 흐름입니다. 실제 인터넷 요청은 엔진에서 목적지 서버로 전달되며 SQLite나 UI를 거쳐 인터넷에 나가는 것은 아닙니다.
-
-| 영역 | 실제 구현 | 분리 이유 |
-|---|---|---|
-| Capture Engine | Windows/Mac: Python·mitmproxy, Android: Dart 프록시·Kotlin VPN/CA 연동 | OS의 라우팅·TLS·인증서 API가 다릅니다. |
-| Capture Core | `packages/capture_core` | 세션 모델과 저장 기능을 엔진과 독립적으로 유지합니다. |
-| Capture Export | `packages/capture_export` | 같은 세션으로 같은 SAZ/HAR 생성 코드를 사용합니다. |
-| UI | Windows/Mac 공통 Flutter 화면, Android 별도 Flutter 화면 | 데스크톱 표와 모바일 VPN·인증서 절차의 사용성이 다릅니다. |
-| OS Adapter | Windows WinINet/사용자 인증서 저장소, Mac networksetup/Keychain, Android VpnService/Keystore | Exporter나 모델 코드에 OS 설정 작업을 섞지 않습니다. |
-
-Flutter 프로젝트가 하나라는 말이 모든 OS의 캡처 엔진까지 같다는 뜻은 아닙니다. `apps/capture_app/lib/main.dart`가 Android 화면과 공통 데스크톱 화면을 선택합니다. iOS runner 파일이 있더라도 독립 캡처 엔진이 구현되었다는 뜻은 아닙니다.
+Windows와 Mac은 Flutter 화면·Python/mitmproxy 엔진·공통 저장소·Exporter를 공유합니다. OS 프록시와 CA 신뢰만 Windows/Mac 어댑터로 분리합니다. 화살표는 캡처 데이터 흐름이며 인터넷 전달은 프록시 엔진에서 목적지로 진행됩니다.
 
 ## 3. Windows/Mac의 처리 과정
 
@@ -48,17 +40,7 @@ UI와 엔진의 통신은 로컬 표준 입출력의 JSON 명령·이벤트·응
 
 Windows는 현재 사용자 WinINet 설정을 사용하며 시스템 프록시 옵션을 필요에 따라 켭니다. Mac은 Start 시 시스템 HTTP/HTTPS 프록시 적용이 기본입니다. Windows는 활성 명시적 프록시/PAC URL을, Mac은 활성 HTTP/HTTPS/SOCKS/PAC·자동 검색을 발견하면 덮어쓰기를 거부합니다. Windows의 검사가 WPAD·VPN·WinHTTP·GPO 전체를 판단하는 것은 아닙니다.
 
-## 4. Android는 어떤 방식인가요?
-
-Android는 Flutter UI와 Dart 로컬 프록시, Kotlin의 VPN·CA·파일 내보내기 코드를 사용합니다. Flutter와 Kotlin은 `MethodChannel('dev.httpcapture/android')`로 연결합니다.
-
-현재 VpnService는 임시 VPN 네트워크에 HTTP 프록시 힌트를 지정합니다. **TCP/UDP 패킷 처리 스택이나 tun-to-socket 엔진을 구현한 상태가 아닙니다.** 프록시를 따르는 앱이 수집 대상이며 기존 VPN을 대체할 수 있습니다.
-
-CA 개인키는 Android Keystore에 생성합니다. 공개 인증서를 Downloads에 저장하고 보안 설정을 여는 일은 앱이 돕지만, Android 시스템에서 CA를 설치하는 사용자 확인 과정은 필요합니다. 일반 앱이 이를 조용히 설치·삭제하거나 인증서 고정을 우회하지 않습니다.
-
-Stop은 VPN 프록시 해제를 확인한 뒤 Dart 리스너를 닫습니다. 다른 앱으로 전환해도 캡처는 유지됩니다. 뒤로 가기/명시적 종료, 작업 제거, VPN 승인 철회, heartbeat 감시가 해제 경로에 참여합니다. 모든 기기·비정상 상황을 보장하는 것은 아닙니다. Wi-Fi 프록시는 지속적으로 변경하지 않습니다.
-
-## 5. 공통 모델과 로컬 저장
+## 4. 공통 모델과 로컬 저장
 
 | 데이터 | 보존 내용 |
 |---|---|
@@ -70,11 +52,10 @@ Stop은 VPN 프록시 해제를 확인한 뒤 Dart 리스너를 닫습니다. �
 
 세션 메타데이터는 `sessions.sqlite`, Body는 `bodies/` 아래 별도 파일에 저장합니다. SQLite는 WAL과 FULL synchronous 설정을 사용하며, 종료되지 않은 receiving/pending 세션은 재시작 시 interrupted로 처리합니다. Body 참조는 경로와 파일 길이를 검사하고 외부 경로·심볼릭 링크를 거부합니다.
 
-저장 형식은 파싱된 HTTP entity 표현입니다. TCP/TLS wire의 모든 바이트를 그대로 기록한 파일이 아닙니다. Android는 파싱된 Header API를 사용하므로 공통 모델이 순서를 표현할 수 있더라도 원래 casing·전역 순서를 모두 복원할 수는 없습니다.
+저장 형식은 파싱된 HTTP entity 표현입니다. TCP/TLS wire의 모든 바이트를 그대로 기록한 파일이 아닙니다. 
+데스크톱 본문 미리보기는 처음 64 KiB까지 읽습니다. 내보내기는 미리보기와 별도로 저장된 데이터를 읽습니다.
 
-현재 Android Body 저장 제한은 요청/응답 각각 64 MiB이며 초과하면 partial로 표시하고 전달은 계속합니다. 데스크톱 본문 미리보기는 처음 64 KiB까지 읽습니다. 이는 구현상의 제한이며 성능 측정 결과가 아닙니다. 내보내기는 미리보기와 별도로 저장된 데이터를 읽습니다.
-
-## 6. SAZ/HAR 생성과 데이터 표현
+## 5. SAZ/HAR 생성과 데이터 표현
 
 두 형식은 모든 플랫폼에서 같은 Dart Exporter를 사용합니다.
 
@@ -84,7 +65,7 @@ Stop은 VPN 프록시 해제를 확인한 뒤 Dart 리스너를 닫습니다. �
 
 측정하지 않은 시간 단계는 `-1`로 표시하고 `_elapsedMs`, `_captureStatus`, `_error` 등의 확장 정보로 수집 상태를 구분합니다. 내보내기 임시 파일과 완료 처리를 분리하지만, 내보냈다는 사실이 민감정보 마스킹을 뜻하지는 않습니다. Cookie·Authorization·고객 정보가 남을 수 있습니다.
 
-## 7. 데스크톱 UI 읽기
+## 6. 데스크톱 UI 읽기
 
 ![데스크톱 화면 안내](images/desktop-ui.svg)
 
@@ -100,17 +81,7 @@ Stop은 VPN 프록시 해제를 확인한 뒤 Dart 리스너를 닫습니다. �
 
 선택 세션만 내보내면 HAR 한 항목만 보일 수 있습니다. 앱 전체 통신을 확인할 때는 전체 세션을 내보내세요.
 
-## 8. Android UI와 사용 순서
-
-![Android 화면과 흐름](images/android-ui.svg)
-
-필요하면 HTTPS 설정에서 복호화를 켜고 공개 CA 준비·시스템 설치를 진행합니다. Start와 VPN 승인을 마친 뒤 대상 앱으로 전환해 새 요청을 발생시킵니다. 돌아와 Stop 후 SAZ/HAR를 내보냅니다. 시스템 문서 선택기에 클라우드 제공자가 보일 수 있으므로 데이터에 적합한 위치를 고릅니다.
-
-Test HTTP/Test TLS는 장치 로컬 테스트 서버와 실제 요청을 주고받는 확인 기능입니다. 이 성공이 모든 외부 앱의 CA 신뢰나 프록시 사용을 입증하지는 않습니다. 현재 모바일 화면은 필터링된 최대 200개 저장 세션을 표시하며 상세창은 Header와 Body 크기를 보여줍니다. 데스크톱과 같은 본문 미리보기는 없습니다. Exporter는 화면에 보이는 항목만이 아니라 저장된 세션을 순회합니다.
-
-Android 화면은 데스크톱 화면을 그대로 축소한 것이 아닙니다. 설명 그림에 없는 앱별 선택·프로세스 추적·패킷 뷰 기능이 있다고 해석해서는 안 됩니다.
-
-## 9. 실제 앱 요청이 잡혔는지 확인하기
+## 7. 실제 앱 요청이 잡혔는지 확인하기
 
 1. 기존 데이터를 저장한 뒤 Stop과 Clear로 테스트를 분리합니다.
 2. Start 후 대상 앱에서 새로고침·검색 등 새 요청을 만듭니다.
@@ -119,22 +90,10 @@ Android 화면은 데스크톱 화면을 그대로 축소한 것이 아닙니다
 
 CONNECT 한 줄보다 실제 HTTPS GET/POST와 읽을 수 있는 응답 본문이 복호화의 근거가 됩니다. User-Agent는 참고 정보이지만 이 Preview에는 모든 세션을 실제 실행 프로세스 ID와 연결하는 기능이 없습니다. User-Agent만으로 요청 앱을 단정할 수 없습니다. 비어 있는 캡처도 앱에 통신이 없었다는 증거는 아닙니다.
 
-## 10. 검증 수준과 지원 제한
+## 현재 검증과 후속 개발
 
-- 구조 정리 후 [Windows 빌드](https://github.com/yongjun94/PacketCollect/actions/runs/40652755920), [Mac 빌드](https://github.com/yongjun94/PacketCollect/actions/runs/40652755909)가 빌드·자동 검증에 성공했습니다.
-- [Android 빌드·API35 에뮬레이터](https://github.com/yongjun94/PacketCollect/actions/runs/40652755751)에서 HTTP/HTTPS와 중지·종료 시 VPN 프록시 해제를 확인했습니다. 실제 사용자 CA 설치와 기기별 검증은 별도입니다.
-- 이전 Windows 버전은 사용자가 Fiddler/DevTools 가져오기를 확인했습니다. Mac 사용자 HAR에서도 Safari HTTPS 응답과 HTML 저장을 확인했습니다. 새 구조의 모든 실기기 동작을 확인한 것은 아닙니다.
-- 데스크톱은 HTTP/1.1과 검증한 HTTP/2 경로를 다룹니다. Android 프록시는 HTTP/1.1 중심입니다. WebSocket payload·HTTP/3/QUIC·iOS 단독 캡처·Intel Mac 배포·원격 모바일 프록시 UI는 현재 제공 범위가 아닙니다.
-- 강제 종료 직후 Mac 프록시 복원을 보장하는 상주 권한 helper는 없습니다. 재실행 복구, 승인 거부, 외부 설정 변경을 별도로 고려해야 합니다.
+Windows 캡처 및 Fiddler/DevTools 가져오기는 사용자가 기존 버전에서 확인했습니다. Mac은 사용자 HAR에서 Safari HTTPS 응답 저장을 확인했습니다. 모든 앱·새 빌드에서의 동작 보장은 아닙니다. [지원 정책과 검증 한계](platform-support.md)
 
-테스트도 `test/desktop`과 `test/android`로 나눕니다. 통합 초기에 Android TLS fixture가 Mac의 네이티브 신뢰 검증에서 실패했습니다. 이를 Mac 엔진 지원으로 간주하지 않고 실제 대상별로 실행 범위를 나눴으며 TLS 검증을 끄지 않았습니다. Mac의 실제 수집 엔진은 Python/mitmproxy입니다.
+개발은 데스크톱 캡처 안정성, 프록시 복구, 대용량 저장·내보내기, 형식 호환성과 배포 서명·공증에 집중합니다. Android/iOS와 모바일 원격 캡처는 현재 로드맵에 없습니다. 모바일 코드는 과거 실험 기록으로만 보존합니다.
 
-## 11. 유지보수와 후속 개발
-
-소스는 `http-capture/`에 있으며 ZIP·overlay는 Git 이력으로 이동했습니다. 모델/저장은 `capture_core`, 파일 형식은 `capture_export`, 공통 데스크톱 UI는 `lib/app.dart`, OS 설정은 각 adapter를 수정합니다. Android Kotlin 원본은 `engines/android_vpn`에 있고 `scripts/prepare_android.py`가 Dart 원본을 덮어쓰지 않고 runner를 생성합니다.
-
-[코드 위치 안내](code-map.md), [설치 안내](../release/INSTALL.md), [영문 설치 안내](../release/INSTALL.en.md)를 함께 참고하세요. 배포 서명·업데이트 키, 기업 upstream/PAC/VPN, 실기기 검증 확대, 모바일 Inspector, 선택적 마스킹, 독립 패킷 엔진은 후속 범위입니다.
-
-### 그림 수정 방법
-
-`docs/generate_figures.py`가 SVG 원본과 검토용 PNG를 생성합니다. Python 3와 Inkscape 명령줄 도구가 있는 환경에서 실행합니다. 이는 문서 작성 도구이며 앱 실행 의존성이 아닙니다. 실제 구현과 버튼 상태를 맞추고 가상 데이터를 명시하며 고객 트래픽 화면으로 대체하지 않습니다.
+[코드 지도](code-map.md) · [빌드](../http-capture/README.md)

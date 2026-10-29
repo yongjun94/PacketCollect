@@ -1,9 +1,9 @@
-name: Add English preview release descriptions
+name: Update desktop preview support notes
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['release/notes.en.md', 'release/INSTALL.en.md', 'release/distribution-status.md']
+    paths: ['release/notes.ko.md', 'release/notes.en.md', 'release/INSTALL.en.md', 'release/distribution-status.md']
 permissions:
   contents: read
 jobs:
@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
-      - name: Add English text and verify existing packages are unchanged
+      - name: Update bilingual desktop notes and verify existing assets are unchanged
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/update_release_english.py

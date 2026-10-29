@@ -1,10 +1,24 @@
 # HTTP Capture
 
-> **공개·배포 상태:** 실행 파일의 기술 검증과 의존성 라이선스 준수 검토는 별개입니다. 현재 라이선스 검토는 미완료입니다. [공개용 소개 초안](docs/public-overview.ko.md) · [검토 현황](docs/license-review-status.md) · [공개 전 확인 목록](docs/publication-checklist.md)
-
 한국어 | [English](README.en.md)
 
-Windows·macOS·Android에서 HTTP/HTTPS를 로컬 수집하고 SAZ/HAR로 내보내는 개발 프로젝트입니다. **실제 소스는 `http-capture/` 한 곳에 있습니다.** ZIP 압축 해제나 `fixes` 덮어쓰기 없이 해당 폴더를 직접 수정·빌드합니다.
+**Windows·macOS 데스크톱용 HTTP/HTTPS 로컬 캡처 및 SAZ/HAR 내보내기 도구입니다.**
+
+> 2026-10-29 지원 범위를 데스크톱으로 한정했습니다. Android 개발·APK 배포는 중단했으며 iOS는 지원하지 않습니다. [지원 정책과 모바일 중단 사유](docs/platform-support.md)
+>
+> 의존성 라이선스 검토는 미완료입니다. 기술 검증용 Preview이며 일반 외부 재배포 승인과는 다릅니다. [검토 현황](docs/license-review-status.md)
+
+## 지원 플랫폼과 다운로드
+
+| 플랫폼 | 현재 제공 범위 |
+|---|---|
+| Windows x64 | Flutter 데스크톱 앱 + 번들된 Python/mitmproxy |
+| macOS Apple Silicon | 같은 Flutter 앱·엔진 + macOS 프록시/Keychain 어댑터 |
+| Android / iOS | 현재 개발·지원·배포 대상 아님 |
+
+[데스크톱 Preview 다운로드](https://github.com/yongjun94/PacketCollect/releases/tag/v0.1.0-preview.20261028) · [설치 안내](release/INSTALL.md)
+
+기존 Release에 남아 있는 Android APK는 과거 실험 산출물이며 지원 버전이 아닙니다. Windows/Mac 사용자는 ZIP을 전체 압축 해제해 실행합니다. Python·Flutter SDK를 별도로 설치할 필요가 없습니다. Windows 배포 서명과 Mac Developer ID 서명·공증은 완료되지 않았습니다.
 
 ## 개발 배경
 
@@ -14,26 +28,26 @@ HTTP Capture는 **Fiddler Classic의 업무·상업적 사용 라이선스 정�
 
 HTTP Capture는 Progress/Telerik의 공식 제품·포크·제휴 프로젝트가 아닙니다. SAZ 호환을 위한 자체 구현이며, 이 개발 배경이 Fiddler 라이선스의 우회나 모든 Fiddler 기능의 동등 지원을 의미하지 않습니다.
 
-## 전체 구조와 화면 안내
+## 아키텍처와 사용 흐름
 
-![HTTP Capture 전체 아키텍처](docs/images/architecture.svg)
+![데스크톱 아키텍처](docs/images/architecture.svg)
 
-[상세 한국어 안내](docs/architecture.ko.md) · [Detailed English guide](docs/architecture.en.md)
+Windows와 Mac은 `app.dart` 화면, `desktop_engine.dart` IPC, Python/mitmproxy 엔진, `capture_core` 모델·저장소와 `capture_export` SAZ/HAR를 공유합니다. 프록시 설정과 CA 신뢰 작업만 OS 어댑터로 나뉩니다. 소스는 `http-capture/`에서 직접 수정합니다.
 
-공통 모듈과 플랫폼별 엔진, 세션 저장, SAZ/HAR 표현, 인증서·프록시 복구를 설명합니다. 데스크톱·Android UI 안내 그림과 실제 앱 트래픽 확인 절차도 포함했습니다. 그림은 코드에 근거한 설명용 도식이며 실행 화면 스크린샷이 아닙니다.
+![데스크톱 UI 설명용 도식](docs/images/desktop-ui.svg)
 
-## 먼저 볼 파일
+Settings에서 포트·HTTPS·CA·시스템 프록시를 확인한 뒤 Start를 누릅니다. 새 요청이 세션 목록에 나타나는지 확인하고 Stop 후 SAZ/HAR로 내보냅니다. Windows에서는 시스템 프록시 적용 옵션을 확인해야 합니다. Mac은 Start에서 필요한 CA/프록시 승인을 요청합니다. UI 그림은 가상 데이터로 만든 설명용 도식입니다.
 
-- [`http-capture/README.md`](http-capture/README.md): 실행·빌드 및 플랫폼 범위
-- [`docs/code-map.md`](docs/code-map.md): 어떤 기능을 어디서 수정하는지
-- [`.github/workflows`](.github/workflows): 실제 플랫폼 빌드·검증 절차
+수집 대상은 **프록시를 사용하는 HTTP/HTTPS**입니다. 모든 TCP/UDP 패킷이나 모든 앱의 HTTPS 복호화를 보장하지 않습니다. CA 불신·인증서 고정·프록시 우회·기업 정책은 데스크톱에서도 제약이 됩니다. 데이터는 로컬에 저장하며 내보낸 파일에는 토큰·Cookie·개인정보가 포함될 수 있습니다.
 
-공통 모델/저장과 SAZ/HAR는 세 플랫폼이 공유합니다. Windows와 Mac은 같은 데스크톱 화면과 Python/mitmproxy 엔진을 사용하고, OS 설정 어댑터만 나뉩니다. Android는 별도 화면과 Dart 프록시·Kotlin VPN/CA를 사용합니다. iOS 단독 캡처는 구현 전입니다. 모든 패킷이 아니라 프록시를 사용하는 HTTP/HTTPS가 대상입니다.
+## 개발 및 검증
 
-이전 소스 ZIP과 플랫폼 overlay는 Git 이력에 보존돼 있습니다. 최신 코드의 기준으로 사용하지 마세요. 이번 정리 이후 CI 결과와 실기기 상태는 `docs/code-map.md`의 검증 범위를 확인하세요.
+- [빌드 명령](http-capture/README.md)
+- [상세 아키텍처·UI](docs/architecture.ko.md)
+- [코드 위치](docs/code-map.md)
+- [지원 정책·검증 한계](docs/platform-support.md)
+- [Windows/Mac CI](.github/workflows)
 
-## 앱 다운로드
+기존 Windows 버전은 사용자가 캡처 및 Fiddler Classic SAZ/Chrome DevTools HAR 가져오기를 확인했습니다. Mac은 사용자 HAR에서 Safari HTTPS 응답 저장을 확인했습니다. 플랫폼 CI 빌드·자동 테스트와 이러한 사용자 확인은 별도 증거이며 모든 앱·후속 빌드의 호환성을 뜻하지 않습니다.
 
-[HTTP Capture Preview 다운로드 페이지](https://github.com/yongjun94/PacketCollect/releases/tag/v0.1.0-preview.20261028)에서 Windows x64 ZIP, Mac Apple Silicon ZIP, Android APK를 제공합니다. 저장소가 비공개이므로 접근 권한이 있는 GitHub 계정이 필요합니다. 배포 서명/공증이 완료된 정식 버전은 아닙니다. 설치와 기존 APK 업데이트 안내는 Release의 INSTALL.md를 확인하세요.
-
-배포 담당자는 `release/preview.json`에 같은 소스 SHA의 성공한 세 빌드와 artifact ID를 지정합니다. 해당 파일이 main에 반영되면 배포 workflow가 검증 후 초안에 모든 파일을 올리고, 파일 수·크기 확인 후 사전 배포로 게시합니다. 기존 Release를 덮어쓰지 않으며 새 배포는 새 태그를 사용합니다.
+모바일 소스와 과거 테스트 문서는 실험 기록으로 보존합니다. Android 자동 빌드 workflow는 실행 경로에서 옮겼고 향후 개발·배포는 Windows/Mac에 집중합니다.

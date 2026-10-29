@@ -1,3 +1,5 @@
+> **초기 설계·검증 기록 / Historical design and validation record.** 현재 지원 대상은 Windows와 macOS뿐입니다. 아래 과거 계획·미구현 상태·모바일 항목은 최신 제품 범위를 뜻하지 않습니다. [현재 개발 안내](../README.md) · [현재 아키텍처](../../docs/architecture.ko.md) · [지원 정책](../../docs/platform-support.md)
+
 # 아키텍처
 
 Flutter UI → `CaptureEngine` 인터페이스 → DesktopEngine → 상속 stdio 파이프 → Python mitmproxy. Python은 Body를 전용 디렉터리에 스트리밍 저장하고, 표준 session snapshot JSON을 전송합니다. Dart Capture Core만 SQLite에 메타데이터를 기록합니다. Capture Export는 엔진/UI를 참조하지 않습니다.

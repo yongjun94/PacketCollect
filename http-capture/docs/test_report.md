@@ -1,3 +1,5 @@
+> **초기 설계·검증 기록 / Historical design and validation record.** 현재 지원 대상은 Windows와 macOS뿐입니다. 아래 과거 계획·미구현 상태·모바일 항목은 최신 제품 범위를 뜻하지 않습니다. [현재 개발 안내](../README.md) · [현재 아키텍처](../../docs/architecture.ko.md) · [지원 정책](../../docs/platform-support.md)
+
 # 검증 보고서 — 2026-10-25 (Asia/Seoul)
 
 현재 결과는 **Windows MVP 소스 구현 및 Linux 자동 검증**입니다. Windows 제품 인수 완료가 아닙니다.

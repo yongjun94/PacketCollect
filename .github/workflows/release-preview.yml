@@ -1,9 +1,6 @@
-name: Publish tested preview downloads
+name: Publish tested desktop preview downloads
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths: ['release/preview.json']
 permissions:
   contents: read
 concurrency:

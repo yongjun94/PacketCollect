@@ -1,3 +1,5 @@
+> **과거 Android 실험 기록 / Historical Android experiment.** 2026-10-29부터 개발·지원·APK 배포를 중단했습니다. 아래 내용은 현행 설치·사용 안내가 아니며 Office HTTPS 복호화 성공을 뜻하지 않습니다. [현재 지원 정책 / Current policy](platform-support.md)
+
 # Android certificate identifier compatibility candidate
 
 The uploaded public CA lacked Subject Key Identifier (SKI). Its self-signature and basic CA fields verified in OpenSSL; that alone did not prove Office trust or make SKI the confirmed cause of the observed certificate_unknown alerts.

@@ -1,3 +1,5 @@
+> **과거 Android 실험 기록 / Historical Android experiment.** 2026-10-29부터 개발·지원·APK 배포를 중단했습니다. 아래 내용은 현행 설치·사용 안내가 아니며 Office HTTPS 복호화 성공을 뜻하지 않습니다. [현재 지원 정책 / Current policy](platform-support.md)
+
 # Android HTTPS compatibility investigation
 
 Excel and Copilot reach the CONNECT proxy, work when interception is off, and fail when interception is on. A browser succeeds on the same device. This narrows the problem to interception, but does not prove certificate pinning.

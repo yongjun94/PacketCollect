@@ -1,10 +1,25 @@
 {
-  "tag": "v0.1.0-preview.20261028",
-  "title": "HTTP Capture 0.1.0 Preview (2026-10-28)",
+  "tag": "v0.1.0-preview.20261029",
+  "title": "HTTP Capture Desktop 0.1.0 Preview (2026-10-29)",
   "source_sha": "ff41434306fb65004d379ace2fcb614b1890a4e3",
   "builds": [
-    {"run_id": 40652755920, "workflow": ".github/workflows/windows-build.yml", "artifact": "HTTP-Capture-Windows-x64-unsigned", "artifact_id": 12799813358, "input": "HTTP-Capture-Windows.zip", "output": "HTTP-Capture-Windows-x64.zip", "platform": "windows"},
-    {"run_id": 40652755909, "workflow": ".github/workflows/macos-build.yml", "artifact": "HTTP-Capture-macOS-arm64-preview", "artifact_id": 12800507825, "input": "HTTP-Capture-macOS-arm64.zip", "output": "HTTP-Capture-macOS-arm64.zip", "platform": "macos"},
-    {"run_id": 40652755751, "workflow": ".github/workflows/android-build.yml", "artifact": "HTTP-Capture-Android-preview", "artifact_id": 12799994104, "input": "app-debug.apk", "output": "HTTP-Capture-Android-preview.apk", "platform": "android"}
+    {
+      "run_id": 40652755920,
+      "workflow": ".github/workflows/windows-build.yml",
+      "artifact": "HTTP-Capture-Windows-x64-unsigned",
+      "artifact_id": 12799813358,
+      "input": "HTTP-Capture-Windows.zip",
+      "output": "HTTP-Capture-Windows-x64.zip",
+      "platform": "windows"
+    },
+    {
+      "run_id": 40652755909,
+      "workflow": ".github/workflows/macos-build.yml",
+      "artifact": "HTTP-Capture-macOS-arm64-preview",
+      "artifact_id": 12800507825,
+      "input": "HTTP-Capture-macOS-arm64.zip",
+      "output": "HTTP-Capture-macOS-arm64.zip",
+      "platform": "macos"
+    }
   ]
 }

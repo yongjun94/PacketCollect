@@ -1,67 +1,20 @@
-## English — Windows, macOS and Android downloads
+## English — Desktop-only preview
 
-**Distribution status: license review is incomplete.** Build/test success does not establish third-party redistribution compliance. See the [review record](https://github.com/yongjun94/PacketCollect/blob/main/docs/license-review-status.md) before treating these technical preview packages as cleared for external redistribution.
+**Active development, support and distribution cover Windows and macOS only as of 2026-10-29.** Android development/APK distribution is discontinued; iOS is unsupported. Any APK and old attached installation guide remaining in historical assets do not define current support.
 
-HTTP Capture is a local HTTP/HTTPS capture tool with SAZ and HAR export. Download the file for your platform from **Assets** below. A GitHub account with access to this private repository is required.
+| Download | Platform |
+|---|---|
+| HTTP-Capture-Windows-x64.zip | Windows x64 |
+| HTTP-Capture-macOS-arm64.zip | Apple Silicon macOS |
 
-| Download | Platform | Installation |
-|---|---|---|
-| `HTTP-Capture-Windows-x64.zip` | Windows x64 | Extract the entire archive and run `HTTP-Capture.exe`. |
-| `HTTP-Capture-macOS-arm64.zip` | macOS on Apple Silicon | Extract the archive and copy `HTTP-Capture.app` to Applications. |
-| `HTTP-Capture-Android-preview.apk` | Android | Install the APK and approve the VPN permission when requested. |
+[Current installation guide](https://github.com/yongjun94/PacketCollect/blob/main/release/INSTALL.en.md) · [Support policy and mobile rationale](https://github.com/yongjun94/PacketCollect/blob/main/docs/platform-support.md) · [Architecture and UI](https://github.com/yongjun94/PacketCollect/blob/main/docs/architecture.en.md)
 
-End users do not need Python or the Flutter SDK. See **INSTALL.en.md** for HTTPS CA setup, installation details and Android update precautions.
+Browser capture worked on Android, but Office HTTPS decryption could not be verified. This project now focuses on desktop. It does not claim all mobile capture is impossible or every desktop app can be decrypted.
 
-### Why HTTP Capture was created
+HTTP Capture is independent of Progress/Telerik and was started in response to Fiddler Classic's commercial-use policy changes. Classic's non-commercial free use is distinct.
 
-HTTP Capture was started as an **independent response to changes in Fiddler Classic's business/commercial-use licensing and the requirement for affected users to move to the paid commercial offering, Fiddler Everywhere**. The goal is a local tool focused on HTTP/HTTPS collection and SAZ/HAR export for workplace troubleshooting and customer support.
+The desktop packages come from successful same-source CI builds. Earlier user evidence includes Windows Fiddler/DevTools imports and Mac Safari HTTPS capture; it does not establish universal app or later-build compatibility. Source: `{{SOURCE_SHA}}`.
 
-More precisely, Fiddler Classic did not become a paid product for every user. Progress announced the change on August 3, 2026, with a September 17, 2026 transition deadline for commercial users. Classic remains free for non-commercial use; business/commercial users are directed to Fiddler Everywhere under a commercial license. [Official transition notice](https://www.telerik.com/fiddler/fiddler-classic/commercial-use) · [Official EULA](https://www.telerik.com/purchase/license-agreement/fiddler-enterprise-support)
+End users do not need Python or Flutter. Windows distribution signing and Mac Developer ID signing/notarization remain incomplete. Follow organizational policy. Capture covers proxy-aware HTTP/HTTPS; exports can contain sensitive information.
 
-HTTP Capture is not an official Progress/Telerik product, fork or affiliated project. SAZ support is independently implemented. This motivation does not imply bypassing Fiddler licensing or feature parity with the Fiddler product family.
-
-**개발 배경 요약:** Fiddler Classic의 업무·상업적 이용 정책 변경과 유료 Fiddler Everywhere 전환 요구에 대응해, 회사 업무용 HTTP/HTTPS 캡처 및 SAZ/HAR 내보내기 도구를 독립적으로 개발하기 시작했습니다. 비상업적 Classic 사용은 계속 무료라는 점을 구분합니다.
-
-### Preview status and signing
-
-This is a development preview. Windows has no distribution code signature. The Mac app is ad-hoc signed, without Developer ID signing or Apple notarization. Android uses a debug signing key; an existing APK signed with a different key cannot be updated in place. Back up captured data before considering removal of an older app. Follow your organization's execution and installation policies.
-
-### Validation and limitations
-
-All three packages come from successful CI runs of the same source commit. Windows and Mac build/automated checks passed. Android API35 emulator checks passed for HTTP/HTTPS, capture lifecycle and proxy release on stop/exit. These results do not establish compatibility with every physical device or application; Android user CA installation still requires manual verification.
-
-Capture covers proxy-aware HTTP/HTTPS traffic, not every TCP/UDP packet. Certificate pinning is not bypassed. iOS standalone capture and Intel Mac packages are not included. On macOS, immediate proxy recovery after a forced termination is not guaranteed; reopening the app attempts recovery.
-
-Source commit: `{{SOURCE_SHA}}`.
-
-Use **SHA256SUMS.txt** and **build-provenance.json** to check package integrity and CI provenance. Checksums do not replace code signing.
-
-
-## Architecture, UI and operation guide
-
-[Read the illustrated architecture and UI guide](https://github.com/yongjun94/PacketCollect/blob/main/docs/architecture.en.md) · [한국어 상세 안내](https://github.com/yongjun94/PacketCollect/blob/main/docs/architecture.ko.md)
-
-### How the platforms fit together
-
-| Platform | UI and capture engine | Shared modules |
-|---|---|---|
-| Windows / macOS | One Flutter desktop screen and bundled Python/mitmproxy process, with OS-specific proxy/CA adapters | Dart session model, SQLite/body storage and SAZ/HAR exporters |
-| Android | Separate Flutter screen, Dart HTTP/TLS proxy and Kotlin VPN/CA integration | The same Dart session model, store and exporters |
-
-The engine forwards requests to the destination and writes body files/session events. The UI records metadata in the local store; exporters read the stored sessions to produce files. Desktop control uses local stdio JSON messages. Android native operations use a MethodChannel. No external AI or analysis service is involved.
-
-### Interface previews
-
-- [Desktop UI diagram](https://github.com/yongjun94/PacketCollect/blob/main/docs/images/desktop-ui.svg): capture toolbar, connection state, filtered session table, Request/Response inspector and Settings.
-- [Android UI diagram](https://github.com/yongjun94/PacketCollect/blob/main/docs/images/android-ui.svg): HTTPS setup, VPN approval, app switching, Stop and export.
-- [Whole-system diagram](https://github.com/yongjun94/PacketCollect/blob/main/docs/images/architecture.svg): platform engines and the shared Dart pipeline.
-
-These are documentation schematics based on the source, with synthetic session values—not runtime screenshots or performance measurements. They do not imply an unimplemented app/process selector or packet view.
-
-### Reading a capture
-
-A green Capturing status means the listener is running; it does not prove that a particular app uses it. Trigger a fresh request and look for new URL/method/status/body data. A decrypted HTTPS GET/POST plus response content is stronger evidence than CONNECT alone. User-Agent is only a clue, not reliable process attribution.
-
-Stop before export. In the current desktop selection dialog, Continue exports only the selected session; Cancel exports all stored sessions. On Android, the list shows up to 200 filtered stored sessions, while exports iterate the stored capture. The desktop body preview is limited to the first 64 KiB; Android details show headers/body size.
-
-The detailed guide explains model fields, body completeness, gzip/raw-content HAR extensions, SAZ HTTP/2 normalization, CA consent, proxy ownership/recovery, test evidence and remaining work.
+Existing binaries, checksums and provenance are preserved. Third-party license review remains incomplete; technical tests are separate from redistribution compliance.

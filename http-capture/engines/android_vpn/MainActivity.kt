@@ -53,7 +53,7 @@ class MainActivity : FlutterActivity() {
         val prefs = getSharedPreferences("capture_ca_export", MODE_PRIVATE)
         val previous = prefs.getString("uri", null)?.let { Uri.parse(it) }
         if(previous != null) {
-            try { requireNotNull(contentResolver.openOutputStream(previous,"wt")).use { out -> cert.inputStream().use { it.copyTo(out) } }; return name }
+            try { check(contentResolver.update(previous, ContentValues().apply { put(MediaStore.MediaColumns.DISPLAY_NAME, name) }, null, null) > 0); requireNotNull(contentResolver.openOutputStream(previous,"wt")).use { out -> cert.inputStream().use { it.copyTo(out) } }; return name }
             catch(_: Exception) { prefs.edit().remove("uri").apply() }
         }
         val values = ContentValues().apply {

@@ -11,6 +11,30 @@ import sys
 import venv
 
 ROOT = Path(__file__).resolve().parents[1]
+PUBLISHER = 'yongjunmoon'
+
+
+def windows_version_file(path):
+    """PyInstaller VSVersionInfo so the proxy EXE carries the same publisher as the app."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f'''VSVersionInfo(
+  ffi=FixedFileInfo(filevers=(0, 1, 0, 0), prodvers=(0, 1, 0, 0), mask=0x3f, flags=0x0, OS=0x40004,
+                    fileType=0x1, subtype=0x0, date=(0, 0)),
+  kids=[
+    StringFileInfo([StringTable('040904B0', [
+      StringStruct('CompanyName', '{PUBLISHER}'),
+      StringStruct('FileDescription', 'HTTP Capture proxy engine'),
+      StringStruct('FileVersion', '0.1.0'),
+      StringStruct('InternalName', 'http-capture-proxy'),
+      StringStruct('LegalCopyright', 'Copyright (C) 2026 {PUBLISHER}. All rights reserved.'),
+      StringStruct('OriginalFilename', 'http-capture-proxy.exe'),
+      StringStruct('ProductName', 'HTTP Capture'),
+      StringStruct('ProductVersion', '0.1.0')])]),
+    VarFileInfo([VarStruct('Translation', [1033, 1200])])
+  ]
+)
+''', encoding='utf-8')
+    return path
 
 
 def run(*args, cwd=ROOT, env=None):
@@ -108,7 +132,9 @@ def main():
         run(flutter, 'analyze', cwd=cwd, env=test_env)
     run(flutter, 'pub', 'run', 'test', '--reporter', 'expanded', cwd=ROOT / 'packages/capture_export', env=test_env)
     engine = ROOT / 'engines/desktop_proxy'
-    run(build_python, '-m', 'PyInstaller', '--noconfirm', '--clean', '--onedir', '--name', 'http-capture-proxy',
+    version_args = (['--version-file', windows_version_file(ROOT / '.build/proxy-version.txt')]
+                    if args.target == 'windows' else [])
+    run(build_python, '-m', 'PyInstaller', '--noconfirm', '--clean', '--onedir', '--name', 'http-capture-proxy', *version_args,
         '--paths', engine / 'src', '--collect-all', 'mitmproxy', '--collect-all', 'mitmproxy_rs',
         '--collect-all', {'windows': 'mitmproxy_windows', 'macos': 'mitmproxy_macos'}[args.target],
         '--distpath', ROOT / '.build/frozen', '--workpath', ROOT / '.build/pyinstaller', '--specpath', ROOT / '.build', engine / 'entrypoint.py')
